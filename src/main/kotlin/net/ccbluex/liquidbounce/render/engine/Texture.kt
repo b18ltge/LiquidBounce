@@ -30,7 +30,7 @@ import java.awt.image.BufferedImage
  *
  * @constructor Can only be initialized from an OpenGL context
  */
-class Texture() : GLIDGuard(GL11.glGenTextures(), GL11::glDeleteTextures) {
+open class Texture() : GLIDGuard(0, {}) {
     private var deferredUpdate: BufferedImage? = null
 
     /**
@@ -44,7 +44,7 @@ class Texture() : GLIDGuard(GL11.glGenTextures(), GL11::glDeleteTextures) {
      * Binds this texture to the active sampler. If an update is pending, upload the
      * new image to it
      */
-    fun bind() {
+    open fun bind() {
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.id)
 
         val update = this.deferredUpdate

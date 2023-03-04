@@ -18,75 +18,39 @@
  */
 package net.ccbluex.liquidbounce.base.ultralight.hooks
 
-import net.ccbluex.liquidbounce.base.ultralight.RenderLayer
+import com.mojang.blaze3d.systems.RenderSystem
 import net.ccbluex.liquidbounce.base.ultralight.UltralightEngine
-import net.ccbluex.liquidbounce.event.*
-import org.lwjgl.opengl.GL11
-import org.lwjgl.opengl.GL12
-import org.lwjgl.opengl.GL33.glGetInteger
+import net.ccbluex.liquidbounce.event.Listenable
+import net.ccbluex.liquidbounce.event.ScreenRenderEvent
+import net.ccbluex.liquidbounce.event.handler
+import net.ccbluex.liquidbounce.utils.client.mc
+import net.minecraft.client.gui.DrawableHelper
+import org.lwjgl.opengl.GL31
 
 /**
  * A integration bridge between Minecraft and Ultralight
  */
 object UltralightIntegrationHook : Listenable {
 
+
     val screenRenderHandler = handler<ScreenRenderEvent> {
+        // Update window
         UltralightEngine.update()
 
-        // Render the web content
-        UltralightEngine.window.updateWebContent()
+        // Render the view
 
-        UltralightEngine.window.bindTexture()
-        UltralightEngine.window.postAndWait(Runnable {
-            val tex = glGetInteger(GL11.GL_TEXTURE_BINDING_2D)
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0)
+        val textureId = UltralightEngine.window.textureId
+        println("Texture ID: $textureId")
 
-            val texWidth = UltralightEngine.window.width
-            val texHeight = UltralightEngine.window.height
-            val winWidth = UltralightEngine.window.width
-            val winHeight = UltralightEngine.window.height
-
-            GL12.glDisable(GL12.GL_SCISSOR_TEST)
-            GL12.glEnable(GL12.GL_BLEND)
-            GL12.glBlendFunc(GL12.GL_SRC_ALPHA, GL12.GL_ONE_MINUS_SRC_ALPHA)
-
-
-        })
-
-
-        UltralightEngine.window.swapBuffers()
-    }
-
-    val overlayRenderHandler = handler<OverlayRenderEvent> {
-        UltralightEngine.render(RenderLayer.OVERLAY_LAYER, it.matrices)
-    }
-
-    val windowResizeWHandler = handler<WindowResizeEvent> {
-        UltralightEngine.resize(it.width.toLong(), it.height.toLong())
-    }
-
-    val windowFocusHandler = handler<WindowFocusEvent> {
-        UltralightEngine.inputAdapter.focusCallback(it.window, it.focused)
-    }
-
-    val mouseButtonHandler = handler<MouseButtonEvent> {
-        UltralightEngine.inputAdapter.mouseButtonCallback(it.window, it.button, it.action, it.mods)
-    }
-
-    val mouseScrollHandler = handler<MouseScrollEvent> {
-        UltralightEngine.inputAdapter.scrollCallback(it.window, it.horizontal, it.vertical)
-    }
-
-    val mouseCursorHandler = handler<MouseCursorEvent> {
-        UltralightEngine.inputAdapter.cursorPosCallback(it.window, it.x, it.y)
-    }
-
-    val keyboardKeyHandler = handler<KeyboardKeyEvent> {
-        UltralightEngine.inputAdapter.keyCallback(it.window, it.keyCode, it.scancode, it.action, it.mods)
-    }
-
-    val keyboardCharHandler = handler<KeyboardCharEvent> {
-        UltralightEngine.inputAdapter.charCallback(it.window, it.codepoint)
+        // Render texture
+        RenderSystem.enableTexture()
+        UltralightEngine.window.bindTexture(0)
+        GL31.glActiveTexture(GL31.GL_TEXTURE0)
+        RenderSystem.setShaderColor(1.0f, 0.5f, 1.0f, 1.0f)
+        RenderSystem.enableBlend()
+        DrawableHelper.drawTexture(it.matrices, 0, 0, 0f, 0f, mc.window.scaledWidth, mc.window.scaledHeight, UltralightEngine.window.width, UltralightEngine.window.height)
+        RenderSystem.disableTexture()
+        RenderSystem.disableBlend()
     }
 
 }

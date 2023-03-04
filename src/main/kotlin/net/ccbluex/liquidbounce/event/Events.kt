@@ -54,7 +54,7 @@ class ChunkUnloadEvent(val x: Int, val z: Int) : Event()
 class WorldDisconnectEvent : Event()
 
 @Nameable("gameRender")
-class GameRenderEvent : Event()
+class GameRenderEvent() : Event()
 
 @Nameable("engineRender")
 class EngineRenderEvent(val tickDelta: Float) : Event()

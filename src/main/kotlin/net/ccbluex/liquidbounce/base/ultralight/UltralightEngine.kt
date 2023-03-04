@@ -26,6 +26,7 @@ import com.labymedia.ultralight.os.OperatingSystem
 import com.labymedia.ultralight.util.UltralightGlfwOpenGLContext
 import com.labymedia.ultralight.util.UltralightGlfwOpenGLGPUDriver
 import com.labymedia.ultralight.util.UltralightGlfwOpenGLWindow
+import com.mojang.blaze3d.systems.RenderSystem
 import net.ccbluex.liquidbounce.base.ultralight.filesystem.BrowserFileSystem
 import net.ccbluex.liquidbounce.base.ultralight.glfw.GlfwClipboardAdapter
 import net.ccbluex.liquidbounce.base.ultralight.glfw.GlfwCursorAdapter
@@ -38,8 +39,6 @@ import net.ccbluex.liquidbounce.utils.client.logger
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.util.math.MatrixStack
-import org.lwjgl.glfw.GLFW
-import org.lwjgl.opengl.GL
 
 
 object UltralightEngine {
@@ -49,7 +48,7 @@ object UltralightEngine {
      *
      * Might be useful in the future for external UI.
      */
-    val windowHandle = mc.window.handle
+    var windowHandle = 0L
 
     lateinit var window: UltralightGlfwOpenGLWindow
     lateinit var gpuDriver: UltralightGlfwOpenGLGPUDriver
@@ -64,8 +63,6 @@ object UltralightEngine {
     /**
      * Glfw
      */
-
-
     lateinit var clipboardAdapter: GlfwClipboardAdapter
     lateinit var cursorAdapter: GlfwCursorAdapter
     lateinit var inputAdapter: GlfwInputAdapter
@@ -78,10 +75,14 @@ object UltralightEngine {
 
     private val views = mutableListOf<View>()
 
+    fun initHandle(handle: Long) {
+        windowHandle = handle
+    }
+
     /**
      * Initializes the platform
      */
-    fun init() {
+    fun init(width: Int, height: Int) {
         logger.info("Loading ultralight...")
 
         // Check resources
@@ -92,24 +93,28 @@ object UltralightEngine {
         loadNatives()
 
         // Setup platform
-        logger.debug("Setting up ultralight")
+        println("Setting up ultralight")
+
+        println("${RenderSystem.isOnRenderThread()}")
 
         gpuDriver = UltralightGlfwOpenGLGPUDriver.create(true)
         window = UltralightGlfwOpenGLWindow.create(
             UltralightGlfwOpenGLContext.create(
-                mc.window.width,
-                mc.window.height,
+                width,
+                height,
                 "Minecraft",
                 gpuDriver,
                 windowHandle
             ),
-            mc.window.width,
-            mc.window.height,
+            width,
+            height,
             "Ultralight"
         )
 
-        window.makeContext()
-        window.swapBuffers()
+        // Setup GLFW adapters
+        clipboardAdapter = GlfwClipboardAdapter()
+        cursorAdapter = GlfwCursorAdapter()
+        inputAdapter = GlfwInputAdapter()
 
         window.post {
             window.context.platform.setConfig(
@@ -119,15 +124,9 @@ object UltralightEngine {
             )
             window.context.platform.usePlatformFontLoader()
             window.context.platform.setFileSystem(BrowserFileSystem())
-            // platform.setClipboard(GlfwClipboardAdapter())
+            // window.context.platform.setClipboard(GlfwClipboardAdapter())
 
-            GLFW.glfwShowWindow(window.windowHandle)
-            GL.createCapabilities()
-
-            texShader = ShaderProgram(
-                "",
-                ""
-            )
+            window.view.loadURL("https://liquidbounce.net")
        }
 
         // Setup hooks
@@ -135,11 +134,6 @@ object UltralightEngine {
         UltralightScreenHook
 
         UltralightStorage
-
-        // Setup GLFW adapters
-        clipboardAdapter = GlfwClipboardAdapter()
-        cursorAdapter = GlfwCursorAdapter()
-        inputAdapter = GlfwInputAdapter()
 
         logger.info("Successfully loaded ultralight!")
     }
@@ -157,17 +151,17 @@ object UltralightEngine {
             "gstreamer-full-1.0",
             "gthread-2.0-0"
         )
-        logger.debug("Libraries: $libs")
+        println("Libraries: $libs")
 
         val os = OperatingSystem.get()
         for (lib in libs) {
-            logger.debug("Loading library $lib")
+            println("Loading library $lib")
             System.load(natives.resolve(os.mapLibraryName(lib)).toAbsolutePath().toString())
         }
 
-        logger.debug("Loading UltralightJava")
+        println("Loading UltralightJava")
         UltralightJava.load(natives)
-        logger.debug("Loading UltralightGPUDriver")
+        println("Loading UltralightGPUDriver")
         UltralightGPUDriverNativeUtil.load(natives)
     }
 
@@ -176,6 +170,7 @@ object UltralightEngine {
     }
 
     fun update() {
+        window.updateWebContent()
         window.context.updateJavaScript()
     }
 

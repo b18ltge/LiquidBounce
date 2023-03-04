@@ -19,6 +19,7 @@
 
 package net.ccbluex.liquidbounce.injection.mixins.minecraft.client;
 
+import net.ccbluex.liquidbounce.base.ultralight.UltralightEngine;
 import net.ccbluex.liquidbounce.event.EventManager;
 import net.ccbluex.liquidbounce.event.WindowFocusEvent;
 import net.ccbluex.liquidbounce.event.WindowResizeEvent;
@@ -35,6 +36,23 @@ public class MixinWindow {
 
 
     @Shadow @Final private long handle;
+
+    @Shadow private int width;
+
+    @Shadow private int height;
+
+    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J", shift = At.Shift.AFTER))
+    private void hookInit(CallbackInfo callbackInfo) {
+        // Load up web platform
+        UltralightEngine.INSTANCE.initHandle(handle);
+        UltralightEngine.INSTANCE.init(width, height);
+        UltralightEngine.INSTANCE.update();
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Hook window resize

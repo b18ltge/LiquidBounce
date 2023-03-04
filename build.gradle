@@ -91,10 +91,10 @@ dependencies {
 
     implementation "com.github.CCBlueX:Elixir:1.2.4"
 
-    implementation "com.labymedia:ultralight-java-base:0.4.12"
-    implementation "com.labymedia:ultralight-java-databind:0.4.12"
-    implementation "com.labymedia:ultralight-java-gpu:0.4.12"
-    implementation "com.labymedia:ultralight-java-glfw-opengl-util:0.4.12"
+    implementation project(":ultralight-java-base")
+    implementation project(":ultralight-java-databind")
+    implementation project(":ultralight-java-gpu")
+    implementation project(":ultralight-java-glfw-opengl-util")
 
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
@@ -128,8 +128,6 @@ sourceSets {
         }
     }
 }
-
-processResources.dependsOn makeTheme
 
 // ensure that the encoding is set to UTF-8, no matter what the system default is
 // this fixes some edge cases with special characters not displaying correctly
@@ -187,9 +185,3 @@ remapJar {
     inputFile = shadowJar.archiveFile
 }
 
-task copyZipInclude(type: Copy) {
-    from 'zip_include/'
-    into 'build/libs/zip'
-}
-
-build.dependsOn copyZipInclude

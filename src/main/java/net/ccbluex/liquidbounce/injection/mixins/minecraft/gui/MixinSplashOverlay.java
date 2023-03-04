@@ -19,13 +19,19 @@
 
 package net.ccbluex.liquidbounce.injection.mixins.minecraft.gui;
 
-import net.ccbluex.liquidbounce.base.ultralight.View;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.event.ScreenRenderEvent;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.SplashOverlay;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.resource.ResourceReload;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Custom ultralight splash screen
@@ -36,8 +42,10 @@ public class MixinSplashOverlay {
     @Shadow @Final private MinecraftClient client;
     @Shadow @Final private ResourceReload reload;
 
-    private View view = null;
-    private boolean closing = false;
-
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void render(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo callbackInfo) {
+        EventManager.INSTANCE.callEvent(new ScreenRenderEvent(new GameMenuScreen(true), matrices, mouseX, mouseY, delta));
+        callbackInfo.cancel();
+    }
 
 }

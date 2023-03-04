@@ -1,0 +1,17 @@
+plugins {
+    id("java-library")
+}
+
+group 'com.labymedia'
+
+jar {
+    manifest {
+        attributes(
+                'Automatic-Module-Name': 'com.labymedia.ultralight.gpu'
+        )
+    }
+}
+
+dependencies {
+    implementation(project(":ultralight-java-base"))
+}

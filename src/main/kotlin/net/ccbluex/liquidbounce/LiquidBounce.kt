@@ -99,9 +99,6 @@ object LiquidBounce : Listenable {
             // Initialize the render engine
             RenderEngine.init()
 
-            // Load up web platform
-            UltralightEngine.init()
-
             // Register commands and modules
             CommandManager.registerInbuilt()
             ModuleManager.registerInbuilt()

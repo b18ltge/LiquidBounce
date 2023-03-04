@@ -33,3 +33,10 @@ pluginManagement {
     }
 
 }
+
+include 'ultralight-java-base'
+include 'ultralight-java-glfw-opengl-util'
+include 'ultralight-java-databind'
+include 'ultralight-java-databind-codegen'
+
+include 'ultralight-java-gpu'

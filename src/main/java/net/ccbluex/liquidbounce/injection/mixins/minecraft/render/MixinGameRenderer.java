@@ -70,6 +70,8 @@ public abstract class MixinGameRenderer implements IMixinGameRenderer {
     @Shadow
     protected abstract double getFov(Camera camera, float tickDelta, boolean changingFov);
 
+    boolean skipped = false;
+
     /**
      * Hook game render event
      */
