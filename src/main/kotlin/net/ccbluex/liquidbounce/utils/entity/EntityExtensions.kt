@@ -18,7 +18,7 @@
  */
 package net.ccbluex.liquidbounce.utils.entity
 
-import net.ccbluex.liquidbounce.render.engine.Vec3
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.minecraft.client.input.Input
 import net.minecraft.client.network.ClientPlayerEntity

@@ -23,11 +23,11 @@ import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.render.Fonts
-import net.ccbluex.liquidbounce.render.engine.*
+import net.ccbluex.liquidbounce.render.engine.RenderEngine
 import net.ccbluex.liquidbounce.render.engine.memory.IndexBuffer
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
 import net.ccbluex.liquidbounce.render.engine.memory.VertexFormatComponentDataType
-import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
+import net.ccbluex.liquidbounce.render.engine.tasks.*
 import net.ccbluex.liquidbounce.utils.client.stripMinecraftColorCodes
 import net.ccbluex.liquidbounce.utils.combat.shouldBeShown
 import net.ccbluex.liquidbounce.utils.entity.ping
@@ -202,8 +202,8 @@ object ModuleNametags : Module("Nametags", Category.RENDER) {
             currIdx++
         }
 
-        RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, ColoredPrimitiveShader, indexBuffer = indexBuffer, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true, depthTest = true)))
-        borderVertexFormat?.let { RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(it, PrimitiveType.Lines, ColoredPrimitiveShader, indexBuffer = borderIndexBuffer!!, state = GlRenderState(lineWidth = 1.0f, lineSmooth = true, depthTest = true))) }
+        // RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, ColoredPrimitiveShader, indexBuffer = indexBuffer, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true, depthTest = true)))
+        // borderVertexFormat?.let { RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(it, PrimitiveType.Lines, ColoredPrimitiveShader, indexBuffer = borderIndexBuffer!!, state = GlRenderState(lineWidth = 1.0f, lineSmooth = true, depthTest = true))) }
         RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, fontRenderer.commit())
     }
 

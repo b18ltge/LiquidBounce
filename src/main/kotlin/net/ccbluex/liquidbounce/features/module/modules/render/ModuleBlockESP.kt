@@ -22,18 +22,15 @@ import net.ccbluex.liquidbounce.event.EngineRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.engine.Color4b
-import net.ccbluex.liquidbounce.render.engine.RenderEngine
-import net.ccbluex.liquidbounce.render.engine.Vec3
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
 import net.ccbluex.liquidbounce.render.engine.memory.putVertex
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
 import net.ccbluex.liquidbounce.render.utils.drawBoxNew
 import net.ccbluex.liquidbounce.render.utils.drawBoxOutlineNew
 import net.ccbluex.liquidbounce.render.utils.rainbow
 import net.ccbluex.liquidbounce.utils.block.AbstractBlockLocationTracker
 import net.ccbluex.liquidbounce.utils.block.ChunkScanner
-import net.ccbluex.liquidbounce.utils.render.espBoxInstancedOutlineRenderTask
-import net.ccbluex.liquidbounce.utils.render.espBoxInstancedRenderTask
 import net.minecraft.block.BlockState
 import net.minecraft.block.Blocks
 import net.minecraft.util.math.BlockPos
@@ -76,14 +73,14 @@ object ModuleBlockESP : Module("BlockESP", Category.RENDER) {
             instanceBufferOutline.putVertex { this.position = pos3; this.color = outlineColor }
         }
 
-        RenderEngine.enqueueForRendering(
-            RenderEngine.CAMERA_VIEW_LAYER,
-            espBoxInstancedRenderTask(instanceBuffer, box.first, box.second)
-        )
-        RenderEngine.enqueueForRendering(
-            RenderEngine.CAMERA_VIEW_LAYER,
-            espBoxInstancedOutlineRenderTask(instanceBufferOutline, boxOutline.first, boxOutline.second)
-        )
+//        RenderEngine.enqueueForRendering(
+//            RenderEngine.CAMERA_VIEW_LAYER,
+//            espBoxInstancedRenderTask(instanceBuffer, box.first, box.second)
+//        )
+//        RenderEngine.enqueueForRendering(
+//            RenderEngine.CAMERA_VIEW_LAYER,
+//            espBoxInstancedOutlineRenderTask(instanceBufferOutline, boxOutline.first, boxOutline.second)
+//        )
     }
 
     override fun enable() {

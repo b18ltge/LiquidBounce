@@ -18,6 +18,7 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.render
 
+import com.mojang.blaze3d.systems.RenderSystem
 import net.ccbluex.liquidbounce.config.Choice
 import net.ccbluex.liquidbounce.config.ChoiceConfigurable
 import net.ccbluex.liquidbounce.event.EngineRenderEvent
@@ -25,15 +26,19 @@ import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.misc.FriendManager
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.engine.*
-import net.ccbluex.liquidbounce.render.engine.memory.IndexBuffer
-import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
-import net.ccbluex.liquidbounce.render.engine.memory.VertexFormatComponentDataType
-import net.ccbluex.liquidbounce.render.engine.memory.putVertex
+import net.ccbluex.liquidbounce.render.engine.GlRenderState
+import net.ccbluex.liquidbounce.render.engine.RenderEngine
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
+import net.ccbluex.liquidbounce.render.engine.tasks.VertexFormatRenderTask
+import net.ccbluex.liquidbounce.render.engine.tasks.makeBuffer
+import net.ccbluex.liquidbounce.render.engine.utils.vertex
 import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
 import net.ccbluex.liquidbounce.render.utils.rainbow
 import net.ccbluex.liquidbounce.utils.combat.shouldBeShown
 import net.ccbluex.liquidbounce.utils.entity.interpolateCurrentPosition
+import net.minecraft.client.render.GameRenderer
+import net.minecraft.client.render.VertexFormat
 import net.minecraft.entity.Entity
 import net.minecraft.entity.player.PlayerEntity
 import java.awt.Color
@@ -101,49 +106,39 @@ object ModuleTraces : Module("Traces", Category.RENDER) {
             return@handler
         }
 
-        val vertexFormat = PositionColorVertexFormat()
-
-        vertexFormat.initBuffer(filteredEntities.size * 3)
-
-        val indexBuffer = IndexBuffer(filteredEntities.size * 2 * 2, VertexFormatComponentDataType.GlUnsignedShort)
-
         val eyeVector = Vec3(0.0, 0.0, 1.0).rotatePitch((-Math.toRadians(camera.pitch.toDouble())).toFloat())
             .rotateYaw((-Math.toRadians(camera.yaw.toDouble())).toFloat()) + Vec3(camera.pos)
 
-        for (entity in filteredEntities) {
-            val dist = player.distanceTo(entity) * 2.0
+        RenderSystem.setShader { GameRenderer.getPositionColorProgram() }
 
-            val color = if (useDistanceColor) {
-                Color4b(
-                    Color.getHSBColor(
-                        (dist.coerceAtMost(viewDistance) / viewDistance).toFloat() * (120.0f / 360.0f),
-                        1.0f,
-                        1.0f
-                    )
-                )
-            } else if (entity is PlayerEntity && FriendManager.isFriend(entity.gameProfile.name)) {
-                Color4b(0, 0, 255)
-            } else {
-                ModuleMurderMystery.getColor(entity) ?: baseColor ?: return@handler
-            }
-
-            val pos = entity.interpolateCurrentPosition(event.tickDelta)
-
-            val v0 = vertexFormat.putVertex { this.position = eyeVector; this.color = color }
-            val v1 = vertexFormat.putVertex { this.position = pos; this.color = color }
-            val v2 = vertexFormat.putVertex { this.position = pos.add(Vec3(0f, entity.height, 0f)); this.color = color }
-
-            indexBuffer.index(v0)
-            indexBuffer.index(v1)
-            indexBuffer.index(v1)
-            indexBuffer.index(v2)
-        }
 
         val renderTask = VertexFormatRenderTask(
-            vertexFormat,
-            PrimitiveType.Lines,
+            makeBuffer(VertexFormat.DrawMode.LINES) {
+                for (entity in filteredEntities) {
+                    val dist = player.distanceTo(entity) * 2.0
+
+                    val color = if (useDistanceColor) {
+                        Color4b(
+                            Color.getHSBColor(
+                                (dist.coerceAtMost(viewDistance) / viewDistance).toFloat() * (120.0f / 360.0f),
+                                1.0f,
+                                1.0f
+                            )
+                        )
+                    } else if (entity is PlayerEntity && FriendManager.isFriend(entity.gameProfile.name)) {
+                        Color4b(0, 0, 255)
+                    } else {
+                        ModuleMurderMystery.getColor(entity) ?: baseColor ?: return@makeBuffer
+                    }
+
+                    val pos = entity.interpolateCurrentPosition(event.tickDelta)
+
+                    it.vertex(eyeVector).color(color.toRGBA())
+                    it.vertex(pos).color(color.toRGBA())
+                    it.vertex(Vec3(0f, entity.height, 0f)).color(color.toRGBA())
+                }
+            },
             ColoredPrimitiveShader,
-            indexBuffer = indexBuffer,
             state = GlRenderState(lineWidth = 1.0f, lineSmooth = true)
         )
 

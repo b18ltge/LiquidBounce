@@ -20,10 +20,11 @@
 package net.ccbluex.liquidbounce.render.engine.font
 
 import net.ccbluex.liquidbounce.render.AbstractFontRenderer
-import net.ccbluex.liquidbounce.render.engine.*
 import net.ccbluex.liquidbounce.render.engine.memory.*
-import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
-import net.ccbluex.liquidbounce.render.shaders.TexturedPrimitiveShader
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.RenderTask
+import net.ccbluex.liquidbounce.render.engine.tasks.UV2s
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
 import net.ccbluex.liquidbounce.utils.render.quad
 import java.awt.Font
 import java.util.*
@@ -458,7 +459,7 @@ class FontRenderer(
                 )
             }
 
-            tasks.add(VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, TexturedPrimitiveShader, indexBuffer = indexBuffer, texture = glyphPages[style]!!.texture, state = GlRenderState(texture2d = true, depthTest = false)))
+            // tasks.add(VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, TexturedPrimitiveShader, indexBuffer = indexBuffer, texture = glyphPages[style]!!.texture, state = GlRenderState(texture2d = true, depthTest = false)))
         }
 
         if (this.cache.lines.isNotEmpty()) {
@@ -477,7 +478,7 @@ class FontRenderer(
                 }
             }
 
-            tasks.add(VertexFormatRenderTask(vertexFormat, PrimitiveType.Lines, ColoredPrimitiveShader))
+            // tasks.add(VertexFormatRenderTask(vertexFormat, PrimitiveType.Lines, ColoredPrimitiveShader))
         }
 
         this.cache.lines.clear()

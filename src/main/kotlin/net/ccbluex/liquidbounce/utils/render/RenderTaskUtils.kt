@@ -21,46 +21,37 @@ package net.ccbluex.liquidbounce.utils.render
 
 import net.ccbluex.liquidbounce.render.engine.CullingMode
 import net.ccbluex.liquidbounce.render.engine.GlRenderState
-import net.ccbluex.liquidbounce.render.engine.PrimitiveType
-import net.ccbluex.liquidbounce.render.engine.VertexFormatRenderTask
-import net.ccbluex.liquidbounce.render.engine.memory.IndexBuffer
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
-import net.ccbluex.liquidbounce.render.engine.memory.VertexFormat
+import net.ccbluex.liquidbounce.render.engine.tasks.VertexFormatRenderTask
 import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
 import net.ccbluex.liquidbounce.render.shaders.InstancedColoredPrimitiveShader
+import net.minecraft.client.render.BufferBuilder
+import net.minecraft.client.render.VertexFormat
 
 fun espBoxInstancedRenderTask(
     instanceBuffer: PositionColorVertexFormat,
-    vertexFormat: VertexFormat,
-    indexBuffer: IndexBuffer
+    buffer: Pair<VertexFormat.DrawMode, (BufferBuilder) -> Unit>,
 ) = VertexFormatRenderTask(
-    vertexFormat,
-    PrimitiveType.Triangles,
+    buffer,
     InstancedColoredPrimitiveShader,
-    indexBuffer = indexBuffer,
     perInstance = instanceBuffer,
     state = GlRenderState(culling = CullingMode.BACKFACE_CULLING)
 )
 
 fun espBoxRenderTask(
-    pair: Pair<VertexFormat, IndexBuffer>
+    buffer: Pair<VertexFormat.DrawMode, (BufferBuilder) -> Unit>
 ) = VertexFormatRenderTask(
-    pair.first,
-    PrimitiveType.Triangles,
+    buffer,
     ColoredPrimitiveShader,
-    indexBuffer = pair.second,
     state = GlRenderState(culling = CullingMode.BACKFACE_CULLING)
 )
 
 fun espBoxInstancedOutlineRenderTask(
     instanceBuffer: PositionColorVertexFormat,
-    vertexFormat: VertexFormat,
-    indexBuffer: IndexBuffer
+    buffer: Pair<VertexFormat.DrawMode, (BufferBuilder) -> Unit>
 ) = VertexFormatRenderTask(
-    vertexFormat,
-    PrimitiveType.Lines,
+    buffer,
     InstancedColoredPrimitiveShader,
-    indexBuffer = indexBuffer,
     perInstance = instanceBuffer,
     state = GlRenderState(lineWidth = 2.0f, lineSmooth = true)
 )

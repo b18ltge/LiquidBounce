@@ -24,10 +24,10 @@ import net.ccbluex.liquidbounce.event.EngineRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.engine.Color4b
 import net.ccbluex.liquidbounce.render.engine.RenderEngine
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
 import net.ccbluex.liquidbounce.render.engine.memory.putVertex
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
 import net.ccbluex.liquidbounce.render.utils.drawBoxNew
 import net.ccbluex.liquidbounce.render.utils.drawBoxOutlineNew
 import net.ccbluex.liquidbounce.render.utils.rainbow
@@ -85,11 +85,11 @@ object ModuleItemESP : Module("ItemESP", Category.RENDER) {
 
             RenderEngine.enqueueForRendering(
                 RenderEngine.CAMERA_VIEW_LAYER,
-                espBoxInstancedRenderTask(instanceBuffer, box.first, box.second)
+                espBoxInstancedRenderTask(instanceBuffer, box)
             )
             RenderEngine.enqueueForRendering(
                 RenderEngine.CAMERA_VIEW_LAYER,
-                espBoxInstancedOutlineRenderTask(instanceBufferOutline, boxOutline.first, boxOutline.second)
+                espBoxInstancedOutlineRenderTask(instanceBufferOutline, boxOutline)
             )
         }
 

@@ -19,8 +19,8 @@
 
 package net.ccbluex.liquidbounce.render
 
-import net.ccbluex.liquidbounce.render.engine.Color4b
-import net.ccbluex.liquidbounce.render.engine.RenderTask
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.RenderTask
 
 abstract class AbstractFontRenderer {
     abstract val size: Float

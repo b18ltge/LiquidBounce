@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2021 CCBlueX
+ * Copyright (c) 2016 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,74 +17,10 @@
  * along with LiquidBounce. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package net.ccbluex.liquidbounce.render.engine
+package net.ccbluex.liquidbounce.render.engine.shaders
 
+import net.ccbluex.liquidbounce.render.engine.RenderEngine
 import org.lwjgl.opengl.GL20
-
-/**
- * Handles an instance of a shader (vertex, fragment, etc.). This is *not* a shader program.
- *
- * When this object is deallocated, it deletes the shader. Please never split the [id] from this object.
- *
- * @param source The source code of the shader. Not the resource location
- * @throws IllegalStateException When the shader fails to compile
- * @constructor Initializing this class is only possible from a thread that has an OpenGL context.
- */
-private class Shader(shaderType: ShaderType, source: String) {
-    /**
-     * OpenGL's shader id
-     */
-    val id: Int
-
-    /**
-     * Was the shader deleted?
-     */
-    private var wasDeleted = false
-
-    init {
-        // Get an id from OpenGL
-        this.id = GL20.glCreateShader(shaderType.typeConstant)
-
-        // Give the source to the driver
-        GL20.glShaderSource(this.id, source)
-        // Make the driver compile the shader
-        GL20.glCompileShader(this.id)
-
-        // Check if the shader was compiled correctly
-        if (GL20.glGetShaderi(this.id, GL20.GL_COMPILE_STATUS) != GL20.GL_TRUE) {
-            throw IllegalStateException("Shader failed to compile: ${GL20.glGetShaderInfoLog(this.id)}")
-        }
-    }
-
-    /**
-     * Failsafe, if someone forgets to cleanup the shader
-     */
-    protected fun finalize() {
-        if (!wasDeleted) {
-            val id = this.id
-
-            RenderEngine.runOnGlContext {
-                GL20.glDeleteShader(id)
-            }
-        }
-    }
-
-    /**
-     * Deletes the shader, the id is not usable anymore
-     */
-    fun delete() {
-        if (!wasDeleted) {
-            GL20.glDeleteShader(this.id)
-
-            wasDeleted = true
-        }
-    }
-
-    enum class ShaderType(val typeConstant: Int) {
-        VertexShader(GL20.GL_VERTEX_SHADER),
-        FragmentShader(GL20.GL_FRAGMENT_SHADER),
-    }
-}
 
 /**
  * A handler for OpenGL shader programs
@@ -175,3 +111,69 @@ class ShaderProgram(vertexShaderSource: String, fragmentShaderSource: String) {
     }
 
 }
+
+/**
+ * Handles an instance of a shader (vertex, fragment, etc.). This is *not* a shader program.
+ *
+ * When this object is deallocated, it deletes the shader. Please never split the [id] from this object.
+ *
+ * @param source The source code of the shader. Not the resource location
+ * @throws IllegalStateException When the shader fails to compile
+ * @constructor Initializing this class is only possible from a thread that has an OpenGL context.
+ */
+private class Shader(shaderType: ShaderType, source: String) {
+    /**
+     * OpenGL's shader id
+     */
+    val id: Int
+
+    /**
+     * Was the shader deleted?
+     */
+    private var wasDeleted = false
+
+    init {
+        // Get an id from OpenGL
+        this.id = GL20.glCreateShader(shaderType.typeConstant)
+
+        // Give the source to the driver
+        GL20.glShaderSource(this.id, source)
+        // Make the driver compile the shader
+        GL20.glCompileShader(this.id)
+
+        // Check if the shader was compiled correctly
+        if (GL20.glGetShaderi(this.id, GL20.GL_COMPILE_STATUS) != GL20.GL_TRUE) {
+            throw IllegalStateException("Shader failed to compile: ${GL20.glGetShaderInfoLog(this.id)}")
+        }
+    }
+
+    /**
+     * Failsafe, if someone forgets to cleanup the shader
+     */
+    protected fun finalize() {
+        if (!wasDeleted) {
+            val id = this.id
+
+            RenderEngine.runOnGlContext {
+                GL20.glDeleteShader(id)
+            }
+        }
+    }
+
+    /**
+     * Deletes the shader, the id is not usable anymore
+     */
+    fun delete() {
+        if (!wasDeleted) {
+            GL20.glDeleteShader(this.id)
+
+            wasDeleted = true
+        }
+    }
+
+    enum class ShaderType(val typeConstant: Int) {
+        VertexShader(GL20.GL_VERTEX_SHADER),
+        FragmentShader(GL20.GL_FRAGMENT_SHADER),
+    }
+}
+

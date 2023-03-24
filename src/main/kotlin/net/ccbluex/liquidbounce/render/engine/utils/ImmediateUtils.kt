@@ -19,7 +19,9 @@
 
 package net.ccbluex.liquidbounce.render.engine.utils
 
-import net.ccbluex.liquidbounce.render.engine.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
+import net.minecraft.client.render.BufferBuilder
 import org.lwjgl.opengl.GL11
 import java.nio.ByteBuffer
 
@@ -48,3 +50,7 @@ fun imVertexPositionFromBuffer(vertexBuffer: ByteBuffer, idx: Int) {
         vertexBuffer.getFloat((idx + 2) * 4)
     )
 }
+
+fun BufferBuilder.vertex(vertex: Vec3) = this.vertex(vertex.x.toDouble(), vertex.y.toDouble(), vertex.z.toDouble())
+
+fun BufferBuilder.color(color: Color4b) = this.color(color.r, color.g, color.b, color.a)

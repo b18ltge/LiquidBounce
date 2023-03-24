@@ -24,14 +24,16 @@ import net.ccbluex.liquidbounce.event.MovementInputEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.engine.*
-import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
-import net.ccbluex.liquidbounce.render.engine.memory.putVertex
+import net.ccbluex.liquidbounce.render.engine.GlRenderState
+import net.ccbluex.liquidbounce.render.engine.RenderEngine
+import net.ccbluex.liquidbounce.render.engine.tasks.VertexFormatRenderTask
+import net.ccbluex.liquidbounce.render.engine.tasks.makeBuffer
 import net.ccbluex.liquidbounce.render.shaders.SmoothLineShader
 import net.ccbluex.liquidbounce.utils.entity.SimulatedArrow
 import net.ccbluex.liquidbounce.utils.entity.SimulatedPlayer
 import net.ccbluex.liquidbounce.utils.extensions.toDegrees
 import net.ccbluex.liquidbounce.utils.extensions.toRadians
+import net.minecraft.client.render.VertexFormat
 import net.minecraft.entity.Entity
 import net.minecraft.entity.projectile.ArrowEntity
 import net.minecraft.util.math.Box
@@ -159,18 +161,11 @@ object ModuleAutoDodge : Module("AutoDodge", Category.COMBAT) {
 
     private val onEngineRender = handler<EngineRenderEvent> { event ->
         synchronized(positions) {
-            val vertexFormat = PositionColorVertexFormat()
-
-            vertexFormat.initBuffer(this.positions.size)
-
-            for (i in 0 until positions.size / 3) {
-                vertexFormat.putVertex {
-                    this.position = Vec3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
-                    this.color = Color4b.WHITE
+            val renderTask = VertexFormatRenderTask(makeBuffer(VertexFormat.DrawMode.LINE_STRIP) {
+                for (i in 0 until positions.size / 3) {
+                    it.vertex(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]).color(1f, 1f, 1f, 1f).next()
                 }
-            }
-
-            val renderTask = VertexFormatRenderTask(vertexFormat, PrimitiveType.LineStrip, SmoothLineShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true), shaderData = SmoothLineShader.SmoothLineShaderUniforms(2.0f))
+            }, SmoothLineShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true), shaderData = SmoothLineShader.SmoothLineShaderUniforms(2.0f))
 
             RenderEngine.enqueueForRendering(
                 RenderEngine.CAMERA_VIEW_LAYER_WITHOUT_BOBBING,

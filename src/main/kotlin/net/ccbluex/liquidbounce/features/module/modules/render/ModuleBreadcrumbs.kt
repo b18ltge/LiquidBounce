@@ -23,12 +23,16 @@ import net.ccbluex.liquidbounce.event.PlayerTickEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.engine.*
-import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
-import net.ccbluex.liquidbounce.render.engine.memory.putVertex
+import net.ccbluex.liquidbounce.render.engine.GlRenderState
+import net.ccbluex.liquidbounce.render.engine.RenderEngine
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.RenderTask
+import net.ccbluex.liquidbounce.render.engine.tasks.VertexFormatRenderTask
+import net.ccbluex.liquidbounce.render.engine.tasks.makeBuffer
 import net.ccbluex.liquidbounce.render.shaders.SmoothLineShader
 import net.ccbluex.liquidbounce.render.utils.rainbow
 import net.ccbluex.liquidbounce.utils.entity.interpolateCurrentPosition
+import net.minecraft.client.render.VertexFormat
 
 /**
  * Breadcrumbs module
@@ -76,23 +80,15 @@ object ModuleBreadcrumbs : Module("Breadcrumbs", Category.RENDER) {
 
     @JvmStatic
     internal fun createBreadcrumbsRenderTask(color: Color4b, positions: List<Double>, tickDelta: Float): RenderTask {
-        val vertexFormat = PositionColorVertexFormat()
-
-        vertexFormat.initBuffer(positions.size + 2)
-
-        for (i in 0 until positions.size / 3) {
-            vertexFormat.putVertex {
-                this.position = Vec3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2])
-                this.color = color
+        return VertexFormatRenderTask(makeBuffer(VertexFormat.DrawMode.LINE_STRIP) {
+            for (i in 0 until positions.size / 3) {
+                it.vertex(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]).color(color.r, color.b, color.g, color.a).next()
             }
-        }
 
-        vertexFormat.putVertex {
-            this.position = player.interpolateCurrentPosition(tickDelta)
-            this.color = color
-        }
+            val interpolatedVec = player.interpolateCurrentPosition(tickDelta)
+            it.vertex(interpolatedVec.x.toDouble(), interpolatedVec.y.toDouble(), interpolatedVec.z.toDouble()).color(color.r, color.b, color.g, color.a).next()
 
-        return VertexFormatRenderTask(vertexFormat, PrimitiveType.LineStrip, SmoothLineShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true), shaderData = SmoothLineShader.SmoothLineShaderUniforms(2.0f))
+        }, SmoothLineShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true), shaderData = SmoothLineShader.SmoothLineShaderUniforms(2.0f))
     }
 
     val updateHandler = handler<PlayerTickEvent> {

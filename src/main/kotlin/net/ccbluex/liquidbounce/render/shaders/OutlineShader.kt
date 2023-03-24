@@ -19,8 +19,8 @@
 
 package net.ccbluex.liquidbounce.render.shaders
 
-import net.ccbluex.liquidbounce.render.engine.Color4b
-import net.ccbluex.liquidbounce.render.engine.MinecraftFramebufferShader
+import net.ccbluex.liquidbounce.render.engine.shaders.MinecraftFramebufferShader
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
 
 object OutlineShader : MinecraftFramebufferShader("outline_shader") {
 

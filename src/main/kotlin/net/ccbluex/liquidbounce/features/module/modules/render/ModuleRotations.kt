@@ -23,12 +23,18 @@ import net.ccbluex.liquidbounce.event.EngineRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.engine.*
+import net.ccbluex.liquidbounce.render.engine.GlRenderState
+import net.ccbluex.liquidbounce.render.engine.RenderEngine
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
-import net.ccbluex.liquidbounce.render.engine.memory.putVertex
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
+import net.ccbluex.liquidbounce.render.engine.tasks.VertexFormatRenderTask
+import net.ccbluex.liquidbounce.render.engine.tasks.makeBuffer
+import net.ccbluex.liquidbounce.render.engine.utils.vertex
 import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.math.times
+import net.minecraft.client.render.VertexFormat
 
 /**
  * Rotations module
@@ -57,10 +63,10 @@ object ModuleRotations : Module("Rotations", Category.RENDER) {
             .rotatePitch((-Math.toRadians(camera.pitch.toDouble())).toFloat())
             .rotateYaw((-Math.toRadians(camera.yaw.toDouble())).toFloat()) + Vec3(camera.pos) + Vec3(0.0, 0.0, -1.0)
 
-        vertexFormat.putVertex { this.position = eyeVector; this.color = Color4b.WHITE }
-        vertexFormat.putVertex { this.position = eyeVector + Vec3(serverRotation.rotationVec * 2.0); this.color = Color4b.WHITE }
-
-        RenderEngine.enqueueForRendering(RenderEngine.CAMERA_VIEW_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.LineStrip, ColoredPrimitiveShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true)))
+        RenderEngine.enqueueForRendering(RenderEngine.CAMERA_VIEW_LAYER, VertexFormatRenderTask(makeBuffer(VertexFormat.DrawMode.LINE_STRIP) {
+            it.vertex(eyeVector).color(Color4b.WHITE.toRGBA()).next()
+            it.vertex(eyeVector + Vec3(serverRotation.rotationVec * 2.0)).color(Color4b.WHITE.toRGBA()).next()
+        }, ColoredPrimitiveShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true)))
     }
 
 }

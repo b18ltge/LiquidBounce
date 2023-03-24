@@ -23,6 +23,7 @@ import net.ccbluex.liquidbounce.event.*
 import net.ccbluex.liquidbounce.interfaces.IMixinGameRenderer
 import net.ccbluex.liquidbounce.render.Fonts
 import net.ccbluex.liquidbounce.render.engine.font.GlyphPage
+import net.ccbluex.liquidbounce.render.engine.tasks.RenderTask
 import net.ccbluex.liquidbounce.render.shaders.Shaders
 import net.ccbluex.liquidbounce.utils.client.logger
 import net.ccbluex.liquidbounce.utils.client.mc
@@ -32,7 +33,6 @@ import net.minecraft.client.MinecraftClient
 import org.lwjgl.opengl.GL11
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.regex.Pattern
 
 class Layer(val renderTasks: ArrayList<RenderTask> = ArrayList(200))
 class LayerSettings(val mvpMatrix: Mat4, val culling: Boolean, val depthTest: Boolean = false)
@@ -84,16 +84,6 @@ object RenderEngine : Listenable {
     val deferredForRenderThread: LinkedBlockingQueue<Runnable> = LinkedBlockingQueue()
 
     /**
-     * What OpenGL level is this client supposed to use? Determined when initialized
-     */
-    var openglLevel: OpenGLLevel = OpenGLLevel.OPENGL3_3
-
-    /**
-     * Used to recognize what GL version we are on
-     */
-    val openGlVersionRegex = Pattern.compile("(\\d+)\\.(\\d+)(\\.(\\d+))?(.*)")
-
-    /**
      * Contains the MVP matrix used by MC for the current frame. Always initialized when [LiquidBounceRenderEvent] is dispatched.
      */
     lateinit var cameraMvp: Mat4
@@ -134,34 +124,13 @@ object RenderEngine : Listenable {
         GlyphPage.init()
         Fonts.loadFonts()
 
-        val versionString = GL11.glGetString(GL11.GL_VERSION)
-
-        if (versionString == null) {
-            logger.error("OpenGL didn't return a version string.")
-            return
-        }
-
-        val matcher = openGlVersionRegex.matcher(versionString)
-
-        if (!matcher.matches()) {
-            logger.error("OpenGL returned an invalid version string: $versionString")
-            return
-        }
-
-        val majorVersion = matcher.group(1).toInt()
-        val minorVersion = matcher.group(2).toInt()
-        val patchVersion = if (matcher.groupCount() >= 5) matcher.group(4)?.toInt() else null
-
-        // At the moment there is only one GL backend to be used and most graphic cards do not support 3.3+. So yeah, try it. If it doesn't work. I don't care.
-        // openglLevel = OpenGLLevel.getBestLevelFor(majorVersion, minorVersion) ?: error("Not supported graphics card")
-
-        logger.info("Found out OpenGL version to be $majorVersion.$minorVersion${if (patchVersion != null) ".$patchVersion" else ""}. Using backend for ${openglLevel.backendInfo}")
+        logger.info("Found out OpenGL version to be ${GL11.glGetString(GL11.GL_VERSION)}.")
     }
 
     /**
      * Enqueues a task for rendering
      *
-     * @param layer The layer it is suppose to be rendered on (See this class's description)
+     * @param layer The layer it is supposed to be rendered on (See this class's description)
      */
     fun enqueueForRendering(layer: Int, task: RenderTask) {
         this.renderTaskTable[layer].renderTasks.add(task)
@@ -188,8 +157,6 @@ object RenderEngine : Listenable {
      * Draws all enqueued render tasks.
      */
     fun render(tickDelta: Float) {
-        val lvl = this.openglLevel
-
         GL11.glEnable(GL11.GL_BLEND)
 
         for ((idx, layer) in renderTaskTable.withIndex()) {
@@ -213,9 +180,9 @@ object RenderEngine : Listenable {
             }
 
             for (renderTask in layer.renderTasks) {
-                renderTask.initRendering(lvl, settings.mvpMatrix)
-                renderTask.draw(lvl)
-                renderTask.cleanupRendering(lvl)
+                renderTask.initRendering(settings.mvpMatrix)
+                renderTask.draw()
+                renderTask.cleanupRendering()
             }
 
             layer.renderTasks.clear()
@@ -273,5 +240,6 @@ object RenderEngine : Listenable {
         }
     }
 
-    override fun handleEvents(): Boolean = true
+    override fun handleEvents() = true
+
 }

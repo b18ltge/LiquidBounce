@@ -18,7 +18,7 @@
  */
 package net.ccbluex.liquidbounce.utils.math
 
-import net.ccbluex.liquidbounce.render.engine.Vec4
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec4
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.lwjgl.BufferUtils

@@ -20,7 +20,7 @@
 package net.ccbluex.liquidbounce.config.adapter
 
 import com.google.gson.*
-import net.ccbluex.liquidbounce.render.engine.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
 import java.awt.Color
 import java.lang.reflect.Type
 

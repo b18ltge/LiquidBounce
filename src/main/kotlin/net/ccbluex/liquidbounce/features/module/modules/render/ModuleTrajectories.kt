@@ -22,12 +22,13 @@ import net.ccbluex.liquidbounce.event.EngineRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.engine.*
+import net.ccbluex.liquidbounce.render.engine.RenderEngine
 import net.ccbluex.liquidbounce.render.engine.memory.IndexBuffer
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
 import net.ccbluex.liquidbounce.render.engine.memory.VertexFormatComponentDataType
 import net.ccbluex.liquidbounce.render.engine.memory.putVertex
-import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
 import net.ccbluex.liquidbounce.render.utils.drawBoxNew
 import net.ccbluex.liquidbounce.render.utils.drawBoxSide
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
@@ -86,7 +87,7 @@ object ModuleTrajectories : Module("Trajectories", Category.RENDER) {
 
                 vertexFormat.rect(indexBuffer, Vec3(-10.0, -10.0, 0.0), Vec3(10.0, 10.0, 0.0), Color4b(255, 0, 0, 120))
 
-                RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, ColoredPrimitiveShader))
+                // RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, ColoredPrimitiveShader))
             }
         }
 
@@ -106,7 +107,7 @@ object ModuleTrajectories : Module("Trajectories", Category.RENDER) {
 
                 vertexFormat.rect(indexBuffer, Vec3(-2.0, -1.0, 0.0), Vec3(2.0, 1.0, 0.0), Color4b(255, 0, 0, 50))
 
-                RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, ColoredPrimitiveShader))
+                // RenderEngine.enqueueForRendering(RenderEngine.SCREEN_SPACE_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.Triangles, ColoredPrimitiveShader))
             }
         }
 
@@ -306,7 +307,7 @@ object ModuleTrajectories : Module("Trajectories", Category.RENDER) {
             currTicks++
         }
 
-        RenderEngine.enqueueForRendering(RenderEngine.CAMERA_VIEW_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.LineStrip, ColoredPrimitiveShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true)))
+        // RenderEngine.enqueueForRendering(RenderEngine.CAMERA_VIEW_LAYER, VertexFormatRenderTask(vertexFormat, PrimitiveType.LineStrip, ColoredPrimitiveShader, state = GlRenderState(lineWidth = 2.0f, lineSmooth = true)))
 
         return landingPosition
     }

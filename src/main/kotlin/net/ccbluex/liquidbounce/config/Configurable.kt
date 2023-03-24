@@ -20,7 +20,7 @@ package net.ccbluex.liquidbounce.config
 
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.render.Fonts
-import net.ccbluex.liquidbounce.render.engine.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
 import net.minecraft.block.Block
 import net.minecraft.item.Item
 

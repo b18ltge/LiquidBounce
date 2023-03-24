@@ -19,12 +19,12 @@
 
 package net.ccbluex.liquidbounce.render.engine.memory
 
-import net.ccbluex.liquidbounce.render.engine.Color4b
-import net.ccbluex.liquidbounce.render.engine.UV2s
-import net.ccbluex.liquidbounce.render.engine.Vec3
+import net.ccbluex.liquidbounce.render.engine.tasks.Color4b
+import net.ccbluex.liquidbounce.render.engine.tasks.UV2s
+import net.ccbluex.liquidbounce.render.engine.tasks.Vec3
 import kotlin.reflect.KProperty
 
-abstract class VertexFormat() {
+abstract class VertexFormat {
 
     /**
      * How many vertices are in this buffer?

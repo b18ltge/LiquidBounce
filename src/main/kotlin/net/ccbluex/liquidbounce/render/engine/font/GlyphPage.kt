@@ -20,7 +20,7 @@
 package net.ccbluex.liquidbounce.render.engine.font
 
 import net.ccbluex.liquidbounce.render.engine.Texture
-import net.ccbluex.liquidbounce.render.engine.UV2s
+import net.ccbluex.liquidbounce.render.engine.tasks.UV2s
 import org.lwjgl.opengl.GL11
 import java.awt.*
 import java.awt.font.FontRenderContext

@@ -19,7 +19,7 @@
 
 package net.ccbluex.liquidbounce.render.shaders
 
-import net.ccbluex.liquidbounce.render.engine.MinecraftFramebufferShader
+import net.ccbluex.liquidbounce.render.engine.shaders.MinecraftFramebufferShader
 
 object DitheringShader : MinecraftFramebufferShader("dithering_shader") {
 
