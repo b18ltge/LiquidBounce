@@ -39,9 +39,34 @@ public class ArmorComparator extends MinecraftInstance implements Comparator<Arm
         bd = bd.setScale(places, RoundingMode.HALF_UP);
         return bd.doubleValue();
     }
+    
+    //*** 26.03.2023 CaT@ ***
+	// This is a way to save some armor during PvP
+	public int customCompare(ArmorPiece o1, ArmorPiece o2) {
+		// let threshold is 9
+		final int threshold = 9;
+		
+		Item item1 = o1.getItemStack().getItem();
+		Item item2 = o2.getItemStack().getItem();
+		int durability1 = item1.getMaxDamage(o1.getItemStack()) - item1.getDamage(o1.getItemStack());
+		int durability2 = item2.getMaxDamage(o2.getItemStack()) - item2.getDamage(o2.getItemStack());
+		if (durability1 < threshold && durability2 >= threshold) {
+			return -1;
+		} else if (durability1 >= threshold && durability2 < threshold) {
+			return 1;
+		}
+		return 0;
+	}
 
     @Override
     public int compare(ArmorPiece o1, ArmorPiece o2) {
+        //*** 26.03.2023 CaT@ ***
+		int customResult = customCompare(o1, o2);
+		if (customResult != 0) {
+			return customResult;
+		}
+		// **********************
+        
         // For damage reduction it is better if it is smaller, so it has to be inverted
         // The decimal values have to be rounded since in double math equals is inaccurate
         // For example 1.03 - 0.41 = 0.6200000000000001 and (1.03 - 0.41) == 0.62 would be false
