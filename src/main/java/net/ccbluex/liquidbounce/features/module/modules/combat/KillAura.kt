@@ -50,6 +50,9 @@ import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.item.EntityArmorStand
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.item.ItemSword
+import net.minecraft.item.ItemBucketMilk
+import net.minecraft.item.ItemFood
+import net.minecraft.item.ItemPotion
 import net.minecraft.network.play.client.*
 import net.minecraft.potion.Potion
 import net.minecraft.util.BlockPos
@@ -91,6 +94,10 @@ object KillAura : Module() {
 
     private val hurtTimeValue = IntegerValue("HurtTime", 10, 0, 10)
     private val simulateCooldown = BoolValue("SimulateCooldown", false)
+    private val onlyCriticalsValue = BoolValue("OnlyCriticals ", false)
+    private val falldistanceValue: FloatValue = object : FloatValue("FallDistance", 0.1f, 0f, 0.5f) {
+        override fun isSupported() = onlyCriticalsValue.get()
+    }
 
     // Range
     private val rangeValue = FloatValue("Range", 3.7f, 1f, 8f)
@@ -202,6 +209,7 @@ object KillAura : Module() {
     private val noInventoryDelayValue = object : IntegerValue("NoInvDelay", 200, 0, 500) {
         override fun isSupported() = noInventoryAttackValue.get()
     }
+    private val noConsumeAttack = BoolValue("NoConsumeAttack ", false)
 
     // Visuals
     private val markValue = BoolValue("Mark", true)
@@ -383,10 +391,27 @@ object KillAura : Module() {
             return
         }
 
+	if (noConsumeAttack.get() && mc.thePlayer.isUsingItem && (mc.thePlayer.itemInUse.item is ItemFood || mc.thePlayer.itemInUse.item is ItemBucketMilk || mc.thePlayer.itemInUse.item is ItemPotion)) {
+	    return
+	}
+		
+				
+	if (onlyCriticalsValue.get()) {
+		if (!mc.thePlayer.isOnLadder && !mc.thePlayer.isInWater && !mc.thePlayer.isInWeb && !mc.thePlayer.isInLava && !mc.thePlayer.isPotionActive(Potion.blindness) && mc.thePlayer.ridingEntity == null) { 
+			val criticals = LiquidBounce.moduleManager[Criticals::class.java] as Criticals
+			if (!criticals.state || (criticals.state && !criticals.msTimer.hasTimePassed(criticals.delayValue.get().toLong()))) {
+				if (mc.thePlayer.onGround || mc.thePlayer.fallDistance < falldistanceValue.get()) {
+					return;
+				}
+			}
+		}
+	}
+
         if (target != null && currentTarget != null) {
             while (clicks > 0) {
                 runAttack()
-                clicks--
+		//clicks--
+                clicks = 0
             }
         }
     }
