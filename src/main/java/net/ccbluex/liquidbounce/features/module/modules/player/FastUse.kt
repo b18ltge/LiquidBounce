@@ -24,7 +24,7 @@ import net.minecraft.network.play.client.C03PacketPlayer
 @ModuleInfo(name = "FastUse", description = "Allows you to use items faster.", category = ModuleCategory.PLAYER)
 object FastUse : Module() {
 
-    private val modeValue = ListValue("Mode", arrayOf("Instant", "NCP", "AAC", "Custom"), "NCP")
+    private val modeValue = ListValue("Mode", arrayOf("Instant", "NCP", "AAC", "Matrix", "Custom"), "NCP")
 
     private val noMoveValue = BoolValue("NoMove", false)
 
@@ -78,6 +78,12 @@ object FastUse : Module() {
                 "aac" -> {
                     mc.timer.timerSpeed = 1.22F
                     usedTimer = true
+                }
+				
+				"matrix" -> {
+                    mc.timer.timerSpeed = 0.5F
+                    usedTimer = true
+					mc.netHandler.addToSendQueue(C03PacketPlayer(mc.thePlayer.onGround))
                 }
                 
                 "custom" -> {

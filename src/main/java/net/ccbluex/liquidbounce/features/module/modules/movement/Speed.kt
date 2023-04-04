@@ -71,6 +71,7 @@ object Speed : Module() {
             MineplexGround(),
             // Other
             Matrix(),
+			Matrix661(),
             SlowHop(),
             CustomSpeed(),
             Legit()
@@ -117,6 +118,16 @@ object Speed : Module() {
     }
     val mineplexGroundSpeedValue = object : FloatValue("MineplexGround-Speed", 0.5f, 0.1f, 1f){
         override fun isSupported() = modeValue.get() == "Mineplex"
+    }
+	
+	val veloBoostValue = object : BoolValue("Matrix661-VeloBoost", true){
+        override fun isSupported() = modeValue.get() == "Matrix661"
+    }
+	val timerBoostValue = object : BoolValue("Matrix661-TimerBoost", true){
+        override fun isSupported() = modeValue.get() == "Matrix661"
+    }
+	val usePreMotion = object : BoolValue("Matrix661-UsePreMotion", false){
+        override fun isSupported() = modeValue.get() == "Matrix661"
     }
 
     @EventTarget

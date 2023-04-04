@@ -22,6 +22,7 @@ import net.minecraft.network.play.client.C07PacketPlayerDigging
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement
 import net.minecraft.util.BlockPos
 import net.minecraft.util.EnumFacing
+import net.minecraft.client.settings.GameSettings
 
 @ModuleInfo(name = "NoSlow", description = "Cancels slowness effects caused by Soul Sand and using items.",
         category = ModuleCategory.MOVEMENT)
@@ -37,6 +38,12 @@ object NoSlow : Module() {
 
     private val bowForwardMultiplier = FloatValue("BowForwardMultiplier", 1f, 0.2F, 1f)
     private val bowStrafeMultiplier = FloatValue("BowStrafeMultiplier", 1f, 0.2F, 1f)
+	
+	private val customDiagonalValue = BoolValue("CustomDiagonal", false)
+	private val customDiagonalMultiplier = object : FloatValue("CustomDiagonalMultiplier", 1f, 0.2F, 1f) {
+		override fun isSupported() = customDiagonalValue.get()
+	}
+	
 
     // NCP mode
     private val packet = BoolValue("Packet", true)
@@ -80,7 +87,7 @@ object NoSlow : Module() {
     }
 
     private fun getMultiplier(item: Item?, isForward: Boolean): Float {
-        return when (item) {
+        var result = when (item) {
             is ItemFood, is ItemPotion, is ItemBucketMilk ->
                 if (isForward) consumeForwardMultiplier.get() else consumeStrafeMultiplier.get()
 
@@ -92,6 +99,15 @@ object NoSlow : Module() {
 
             else -> 0.2F
         }
+		if (customDiagonalValue.get() && isMovingDiagonal()) {
+			result = customDiagonalMultiplier.get()
+		}
+		return result
     }
 
+
+	private inline fun isMovingDiagonal() : Boolean {
+		return (GameSettings.isKeyDown(mc.gameSettings.keyBindForward) xor GameSettings.isKeyDown(mc.gameSettings.keyBindBack)) && 
+				(GameSettings.isKeyDown(mc.gameSettings.keyBindLeft) xor GameSettings.isKeyDown(mc.gameSettings.keyBindRight))
+	}
 }

@@ -9,6 +9,7 @@ import net.ccbluex.liquidbounce.utils.MinecraftInstance;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Item;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

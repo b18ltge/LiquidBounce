@@ -48,7 +48,9 @@ class ModuleManager : Listenable {
             Phase::class.java,
             TeleportHit::class.java,
             Ignite::class.java,
-            ItemTeleport::class.java
+            ItemTeleport::class.java,
+			AutoGameMath::class.java,
+			AutoJump::class.java
         )
 
         // Register modules which have already been instanced (Kotlin objects)

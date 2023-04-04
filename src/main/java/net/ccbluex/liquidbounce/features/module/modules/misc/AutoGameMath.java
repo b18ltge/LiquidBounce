@@ -10,6 +10,7 @@ package net.ccbluex.liquidbounce.features.module.modules.misc;
 import net.ccbluex.liquidbounce.LiquidBounce;
 import net.ccbluex.liquidbounce.event.EventTarget;
 import net.ccbluex.liquidbounce.event.PacketEvent;
+import net.ccbluex.liquidbounce.event.UpdateEvent;
 import net.ccbluex.liquidbounce.features.module.Module;
 import net.ccbluex.liquidbounce.features.module.ModuleCategory;
 import net.ccbluex.liquidbounce.features.module.ModuleInfo;
@@ -56,25 +57,27 @@ public class AutoGameMath extends Module {
     };
 
     private final ListValue modeValue = new ListValue("Mode", new String[]{"General", "NewtMC"}, "General");
-	
-	  private final IntegerValue messageCountValue = new IntegerValue("MessageCount", 1, 1, 10);
 
     private final MSTimer msTimer = new MSTimer();
     private long delay = TimeUtils.randomDelay(minDelayValue.get(), maxDelayValue.get());
-	  private boolean isWaiting = false;
-	  private int numberToSend;
+	private boolean isWaiting = false;
+	private int numberToSend;
+	  
+	@EventTarget
+	public void onUpdate(UpdateEvent event) {
+		if(isWaiting) {
+			if (!msTimer.hasTimePassed(delay))
+				return;
+		
+			mc.thePlayer.sendChatMessage("" + numberToSend);
+			isWaiting = false;
+			return;
+        }
+
+	}
 
     @EventTarget
     public void onPacket(PacketEvent event) {
-        if(isWaiting && !msTimer.hasTimePassed(delay)) {
-          return;
-        }
-
-        if (isWaiting) {
-          mc.thePlayer.sendChatMessage("" + numberToSend);
-          isWaiting = false;
-        }
-		
         final Packet packet = event.getPacket();
 			
         if (!(packet instanceof S02PacketChat)) {
@@ -105,13 +108,13 @@ public class AutoGameMath extends Module {
           }
         } else if (modeValue.get().equalsIgnoreCase("NewtMC")) {
 
-          final int position = chatMessage.indexOf("Решите");
+          final int position = chatMessage.indexOf("чат игры // решите 12 + 34");
 
           if (position == -1)
             return;
 
-          final String part1 = chatMessage.substring(position + 7, position + 9);
-          final String part2 = chatMessage.substring(position + 11, position + 13);
+          final String part1 = chatMessage.substring(position + 19, position + 21);
+          final String part2 = chatMessage.substring(position + 24, position + 26);
 
           sum = Integer.valueOf(part1) + Integer.valueOf(part2);
         }

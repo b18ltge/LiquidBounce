@@ -18,6 +18,7 @@ import net.ccbluex.liquidbounce.utils.item.ItemUtils;
 import net.ccbluex.liquidbounce.utils.timer.TimeUtils;
 import net.ccbluex.liquidbounce.value.BoolValue;
 import net.ccbluex.liquidbounce.value.IntegerValue;
+import net.ccbluex.liquidbounce.value.FloatValue;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ItemArmor;
@@ -76,11 +77,34 @@ public class AutoArmor extends Module {
     private final BoolValue noMoveValue = new BoolValue("NoMove", false);
     private final IntegerValue itemDelayValue = new IntegerValue("ItemDelay", 0, 0, 5000);
     private final BoolValue hotbarValue = new BoolValue("Hotbar", true);
-    private final BoolValue smartValue = new BoolValue("SmartMode", false); 
-	private final FloatValue expectedDamageValue = new FloatValue("ExpectedDamage", 18.25f, 0f, 50f) {
+    private final BoolValue smartValue = new BoolValue("SmartMode", false) {
+        @Override
+        public boolean isSupported() {
+            return !ignoreHelmetsValue.get();
+        }
+    };
+	private final IntegerValue swordDamageValue = new IntegerValue("SwordDamage", 7, 4, 7) {
         @Override
         public boolean isSupported() {
             return smartValue.get();
+        }
+    };
+	private final IntegerValue sharpnessValue = new IntegerValue("Sharpness", 5, 0, 5) {
+        @Override
+        public boolean isSupported() {
+            return smartValue.get();
+        }
+    };
+	private final BoolValue necromancerValue = new BoolValue("NewtMC-Necromancer", false) {
+        @Override
+        public boolean isSupported() {
+            return smartValue.get();
+        }
+    };
+	private final IntegerValue necromancerLevelValue = new IntegerValue("NecromancerLevel", 5, 0, 20) {
+        @Override
+        public boolean isSupported() {
+            return smartValue.get() && necromancerValue.get();
         }
     };
 	private final FloatValue minHealthValue = new FloatValue("MinHealth", 16f, 0f, 20f) {
@@ -177,7 +201,10 @@ public class AutoArmor extends Module {
             resistanceMultiplier -= Math.min(1.0f, 0.2f * (mc.thePlayer.getActivePotionEffect(Potion.resistance).getAmplifier() + 1));
         }
         
-        return mc.thePlayer.getHealth() <= expectedDamageValue.get() / 100 * (100 - damageReductionAmount) * resistanceMultiplier;
+		float expectedDamage = (1 + swordDamageValue.get()) * 1.5f + (sharpnessValue.get() * 1.25f);
+		expectedDamage += (necromancerValue.get() ? necromancerLevelValue.get() * 0.1f : 0);
+		
+        return mc.thePlayer.getHealth() <= expectedDamage / 100 * (100 - damageReductionAmount) * resistanceMultiplier;
     }
 
     @EventTarget
@@ -212,7 +239,7 @@ public class AutoArmor extends Module {
             if (i == disabledArmorSlot) {
 				final ItemStack itemStack = mc.thePlayer.inventory.armorItemInSlot(armorSlot);
 				if (!ItemUtils.isStackEmpty(itemStack) && itemStack.getItem() instanceof ItemArmor) {
-					moveOutArmor(8 - armorSlot);
+                    move(8 - armorSlot, true);
 					locked = true;
 					return;
 				}
@@ -294,7 +321,7 @@ public class AutoArmor extends Module {
         return false;
     }
 
-    private boolean moveOutArmor(int item) {
+    /*private boolean moveOutArmor(int item) {
 		if (!(noMoveValue.get() && MovementUtils.isMoving()) && (!invOpenValue.get() || mc.currentScreen instanceof GuiInventory) && item != -1) {
             final boolean openInventory = simulateInventory.get() && !(mc.currentScreen instanceof GuiInventory);
 
@@ -323,5 +350,5 @@ public class AutoArmor extends Module {
 			return true;
         }
 		return false;
-	}
+	}*/
 }
