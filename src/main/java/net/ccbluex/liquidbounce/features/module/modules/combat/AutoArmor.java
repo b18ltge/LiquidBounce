@@ -11,11 +11,13 @@ import net.ccbluex.liquidbounce.features.module.Module;
 import net.ccbluex.liquidbounce.features.module.ModuleCategory;
 import net.ccbluex.liquidbounce.features.module.ModuleInfo;
 import net.ccbluex.liquidbounce.injection.implementations.IMixinItemStack;
-import net.ccbluex.liquidbounce.utils.InventoryUtils;
+//import net.ccbluex.liquidbounce.utils.InventoryUtils;
 import net.ccbluex.liquidbounce.utils.item.ArmorComparator;
 import net.ccbluex.liquidbounce.utils.item.ArmorPiece;
 import net.ccbluex.liquidbounce.utils.item.ItemUtils;
 import net.ccbluex.liquidbounce.utils.timer.TimeUtils;
+import net.ccbluex.liquidbounce.utils.timer.MSTimer;
+import net.ccbluex.liquidbounce.utils.ClientUtils;
 import net.ccbluex.liquidbounce.value.BoolValue;
 import net.ccbluex.liquidbounce.value.IntegerValue;
 import net.ccbluex.liquidbounce.value.FloatValue;
@@ -35,6 +37,7 @@ import net.minecraft.network.play.client.C16PacketClientStatus;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -83,6 +86,12 @@ public class AutoArmor extends Module {
             return !ignoreHelmetsValue.get();
         }
     };
+	private final BoolValue partsValue = new BoolValue("TakeOffTwoParts", false) {
+        @Override
+        public boolean isSupported() {
+            return smartValue.get();
+        }
+    };
 	private final IntegerValue swordDamageValue = new IntegerValue("SwordDamage", 7, 4, 7) {
         @Override
         public boolean isSupported() {
@@ -107,6 +116,12 @@ public class AutoArmor extends Module {
             return smartValue.get() && necromancerValue.get();
         }
     };
+	private final FloatValue extraExpectedDamageValue = new FloatValue("ExtraExpectedDamage", 0.1f, 0f, 0.5f) {
+		@Override
+        public boolean isSupported() {
+            return smartValue.get();
+        }
+    };
 	private final FloatValue minHealthValue = new FloatValue("MinHealth", 16f, 0f, 20f) {
 		@Override
         public boolean isSupported() {
@@ -126,7 +141,11 @@ public class AutoArmor extends Module {
     
     private int disabledArmorSlot = -1;	//0..3
 	
+	private int secondDisabledArmorSlot = -1;
+	
 	private boolean canTakeOffArmor = true;
+	
+	private final MSTimer timer = new MSTimer();
     
     private int getTheLeastDurabilitySlot() {
 		int[] armorDurability = new int[4];
@@ -151,18 +170,28 @@ public class AutoArmor extends Module {
             }
 		}
 
-        int minID = -1;
-        int min = Integer.MAX_VALUE;
-        for(int i = 0; i < armorDurability.length; ++i) {
-            if (armorDurability[i] > 0 && armorDurability[i] < min) {
-                min = armorDurability[i];
-                minID = i;
-            }
-        }
-        return minID; 
+		final Map<Integer, Integer> armorDurabilityMap = new HashMap<Integer, Integer>();
+		
+		for(int i = 0; i < armorDurability.length; ++i) {
+			armorDurabilityMap.put(i, armorDurability[i]);
+		}
+		
+		final Object[] sortedEntries = armorDurabilityMap.entrySet().stream().sorted((entry1, entry2) -> {
+			return Integer.compare(entry1.getValue(), entry2.getValue());
+		}).toArray();
+		
+		disabledArmorSlot = ((Map.Entry<Integer, Integer>) sortedEntries[0]).getKey();
+		if (partsValue.get()) {
+			secondDisabledArmorSlot = ((Map.Entry<Integer, Integer>) sortedEntries[1]).getKey();
+			if ((disabledArmorSlot == 1 && secondDisabledArmorSlot == 2) || (disabledArmorSlot == 2 && secondDisabledArmorSlot == 1)) {
+				secondDisabledArmorSlot = ((Map.Entry<Integer, Integer>) sortedEntries[2]).getKey();
+			}
+		}
+
+		return disabledArmorSlot;
 	}
 
-    private boolean needEquip(int disabledArmorSlot) {
+    private boolean needEquip() {
 		if (mc.thePlayer.isUsingItem()) {
 			Item usingItem = mc.thePlayer.getItemInUse().getItem();
 			
@@ -179,7 +208,7 @@ public class AutoArmor extends Module {
         int damageReductionAmount = 0;
 
         for(int i = 0; i < 4; ++i) {
-            if (i == disabledArmorSlot) {
+            if (i == disabledArmorSlot || (partsValue.get() && i == secondDisabledArmorSlot)) {
                 continue;
             }
 
@@ -204,19 +233,31 @@ public class AutoArmor extends Module {
 		float expectedDamage = (1 + swordDamageValue.get()) * 1.5f + (sharpnessValue.get() * 1.25f);
 		expectedDamage += (necromancerValue.get() ? necromancerLevelValue.get() * 0.1f : 0);
 		
-        return mc.thePlayer.getHealth() <= expectedDamage / 100 * (100 - damageReductionAmount) * resistanceMultiplier;
+		float postExpectedDamage = expectedDamage / 100 * (100 - damageReductionAmount) * resistanceMultiplier;
+		
+		//ClientUtils.LOGGER.info("needEquip(): Health: " + mc.thePlayer.getHealth());
+		//ClientUtils.LOGGER.info("needEquip(): postExpectedDamage: " + postExpectedDamage);
+        return mc.thePlayer.getHealth() <= postExpectedDamage + extraExpectedDamageValue.get();
     }
 
     @EventTarget
     public void onRender3D(final Render3DEvent event) {
-        if (!InventoryUtils.CLICK_TIMER.hasTimePassed(delay) || mc.thePlayer == null || (mc.thePlayer.openContainer != null && mc.thePlayer.openContainer.windowId != 0))
+		//ClientUtils.LOGGER.info("Health: " + mc.thePlayer.getHealth());
+        //if (!InventoryUtils.CLICK_TIMER.hasTimePassed(delay) || mc.thePlayer == null || (mc.thePlayer.openContainer != null && mc.thePlayer.openContainer.windowId != 0))
+		if (!timer.hasTimePassed(delay) || mc.thePlayer == null || (mc.thePlayer.openContainer != null && mc.thePlayer.openContainer.windowId != 0))
             return;
-        
-        disabledArmorSlot = smartValue.get() ? getTheLeastDurabilitySlot() : -1;
-		if (disabledArmorSlot != -1 && needEquip(disabledArmorSlot)) {
-			canTakeOffArmor = false;
-            disabledArmorSlot = -1;
+       
+		// Find armor to take off
+		if (smartValue.get()) {
+			disabledArmorSlot = getTheLeastDurabilitySlot();
+			if (disabledArmorSlot != -1 && needEquip()) {
+				canTakeOffArmor = false;
+				disabledArmorSlot = -1;
+				secondDisabledArmorSlot = -1;
+			}
 		}
+
+		
 
         // Find best armor
         final Map<Integer, List<ArmorPiece>> armorPieces = IntStream.range(0, 36).filter(i -> {
@@ -236,15 +277,19 @@ public class AutoArmor extends Module {
             int armorSlot = 3 - i;
 			
  
-            if (i == disabledArmorSlot) {
-				final ItemStack itemStack = mc.thePlayer.inventory.armorItemInSlot(armorSlot);
-				if (!ItemUtils.isStackEmpty(itemStack) && itemStack.getItem() instanceof ItemArmor) {
-                    move(8 - armorSlot, true);
-					locked = true;
-					return;
+			// Take off armor
+			if (smartValue.get()) {
+				if (i == disabledArmorSlot || (partsValue.get() && i == secondDisabledArmorSlot)) {
+					final ItemStack itemStack = mc.thePlayer.inventory.armorItemInSlot(armorSlot);
+					if (!ItemUtils.isStackEmpty(itemStack) && itemStack.getItem() instanceof ItemArmor) {
+						move(8 - armorSlot, true);
+						
+						locked = true;
+						return;
+					}
+					continue;
 				}
-				continue;
-            }
+			}
 			
 			final ArmorPiece armorPiece = bestArmor[i];
 			
@@ -285,6 +330,7 @@ public class AutoArmor extends Module {
             mc.getNetHandler().addToSendQueue(new C08PacketPlayerBlockPlacement(mc.thePlayer.inventoryContainer.getSlot(item).getStack()));
             mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
 
+			timer.reset();
             delay = TimeUtils.randomDelay(minDelayValue.get(), maxDelayValue.get());
 
             return true;
@@ -310,6 +356,7 @@ public class AutoArmor extends Module {
                 mc.playerController.windowClick(mc.thePlayer.inventoryContainer.windowId, (isArmorSlot ? item : (item < 9 ? item + 36 : item)), 0, 1, mc.thePlayer);
             }
 
+			timer.reset();
             delay = TimeUtils.randomDelay(minDelayValue.get(), maxDelayValue.get());
 
             if (openInventory)

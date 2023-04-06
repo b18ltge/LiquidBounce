@@ -121,6 +121,15 @@ object KillAura : Module() {
     private val interactAutoBlockValue = object : BoolValue("InteractAutoBlock", true) {
         override fun isSupported() = autoBlockValue.get() !in setOf("Off", "Fake")
     }
+	private val blockHurtTimeValue = object : IntegerValue("BlockHurtTime", 10, 1, 10) {
+        override fun isSupported() = autoBlockValue.get() != "Off"
+    }
+	private val noBlockWithoutDamageValue = object : BoolValue("NoBlockWithoutDamage", false) {
+        override fun isSupported() = autoBlockValue.get() != "Off"
+    }
+	private val noBlockWithoutDamageTimeValue = object : IntegerValue("NoBlockWithoutDamageTime", 500, 0, 1000) {
+        override fun isSupported() = autoBlockValue.get() != "Off" && noBlockWithoutDamageValue.get()
+    }
     private val blockRate = object : IntegerValue("BlockRate", 100, 1, 100) {
         override fun isSupported() = autoBlockValue.get() != "Off"
     }
@@ -238,6 +247,7 @@ object KillAura : Module() {
     var renderBlocking = false
     var blockStatus = false
     private var blockStopInDead = false
+	private val blockHurtTimeTimer = MSTimer()
 
     /**
      * Enable kill aura module
@@ -371,6 +381,10 @@ object KillAura : Module() {
      */
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
+		if (mc.thePlayer.hurtTime != 0) {
+			blockHurtTimeTimer.reset()
+		}
+	
         if (cancelRun) {
             target = null
             currentTarget = null
@@ -391,10 +405,15 @@ object KillAura : Module() {
         if (simulateCooldown.get() && getAttackCooldownProgress() < 1f) {
             return
         }
-
-	if (noConsumeAttack.get() && mc.thePlayer.isUsingItem && (mc.thePlayer.itemInUse.item is ItemFood || mc.thePlayer.itemInUse.item is ItemBucketMilk || mc.thePlayer.itemInUse.item is ItemPotion)) {
-	    return
+	if (noConsumeAttack.get()) {
+		val stack = mc.thePlayer.inventoryContainer.getSlot(mc.thePlayer.inventory.currentItem + 36).stack
+		if (stack != null && (stack.item is ItemFood || stack.item is ItemBucketMilk || stack.item is ItemPotion))
+			return;
 	}
+
+	/*if (noConsumeAttack.get() && mc.thePlayer.isUsingItem && (mc.thePlayer.itemInUse.item is ItemFood || mc.thePlayer.itemInUse.item is ItemBucketMilk || mc.thePlayer.itemInUse.item is ItemPotion)) {
+		return
+	}*/
 		
 				
 	if (onlyCriticalsValue.get()) {
@@ -840,7 +859,7 @@ object KillAura : Module() {
      * Check if player is able to block
      */
     private val canBlock: Boolean
-        inline get() = mc.thePlayer?.heldItem?.item is ItemSword
+        inline get() = mc.thePlayer?.heldItem?.item is ItemSword && mc.thePlayer.hurtTime <= blockHurtTimeValue.get() && (!noBlockWithoutDamageValue.get() || !blockHurtTimeTimer.hasTimePassed(noBlockWithoutDamageTimeValue.get()))
 
     /**
      * Range

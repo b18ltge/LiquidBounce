@@ -108,7 +108,7 @@ public class AutoGameMath extends Module {
           }
         } else if (modeValue.get().equalsIgnoreCase("NewtMC")) {
 
-          final int position = chatMessage.indexOf("чат игры // решите 12 + 34");
+          final int position = chatMessage.indexOf("чат игры // решите ");
 
           if (position == -1)
             return;
