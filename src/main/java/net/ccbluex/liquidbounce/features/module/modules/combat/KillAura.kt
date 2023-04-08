@@ -45,6 +45,8 @@ import net.ccbluex.liquidbounce.value.IntegerValue
 import net.ccbluex.liquidbounce.value.ListValue
 import net.minecraft.client.gui.inventory.GuiContainer
 import net.minecraft.client.gui.inventory.GuiInventory
+import net.minecraft.client.settings.GameSettings
+import net.minecraft.client.settings.KeyBinding
 import net.minecraft.enchantment.EnchantmentHelper
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityLivingBase
@@ -96,9 +98,6 @@ object KillAura : Module() {
     private val hurtTimeValue = IntegerValue("HurtTime", 10, 0, 10)
     private val simulateCooldown = BoolValue("SimulateCooldown", false)
     private val onlyCriticalsValue = BoolValue("OnlyCriticals ", false)
-    private val falldistanceValue: FloatValue = object : FloatValue("FallDistance", 0.1f, 0f, 0.5f) {
-        override fun isSupported() = onlyCriticalsValue.get()
-    }
 
     // Range
     private val rangeValue = FloatValue("Range", 3.7f, 1f, 8f)
@@ -117,21 +116,20 @@ object KillAura : Module() {
     private val keepSprintValue = BoolValue("KeepSprint", true)
 
     // AutoBlock
-    private val autoBlockValue = ListValue("AutoBlock", arrayOf("Off", "Packet", "AfterTick", "Fake"), "Packet")
+    private val autoBlockValue: ListValue = object : ListValue("AutoBlock", arrayOf("Off", "Packet", "AfterTick", "Legit", "Fake"), "Packet") {
+	    override fun onChanged(oldValue: String, newValue: String) {
+			if (oldValue == "Legit" && newValue != "Legit") {
+				mc.playerController.onStoppedUsingItem(mc.thePlayer as EntityPlayer)
+				KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false)
+				blockStatus = false
+			}
+        }
+	}
     private val interactAutoBlockValue = object : BoolValue("InteractAutoBlock", true) {
-        override fun isSupported() = autoBlockValue.get() !in setOf("Off", "Fake")
-    }
-	private val blockHurtTimeValue = object : IntegerValue("BlockHurtTime", 10, 1, 10) {
-        override fun isSupported() = autoBlockValue.get() != "Off"
-    }
-	private val noBlockWithoutDamageValue = object : BoolValue("NoBlockWithoutDamage", false) {
-        override fun isSupported() = autoBlockValue.get() != "Off"
-    }
-	private val noBlockWithoutDamageTimeValue = object : IntegerValue("NoBlockWithoutDamageTime", 500, 0, 1000) {
-        override fun isSupported() = autoBlockValue.get() != "Off" && noBlockWithoutDamageValue.get()
+        override fun isSupported() = autoBlockValue.get() !in setOf("Off", "Fake", "Legit")
     }
     private val blockRate = object : IntegerValue("BlockRate", 100, 1, 100) {
-        override fun isSupported() = autoBlockValue.get() != "Off"
+        override fun isSupported() = autoBlockValue.get() != "Off" && autoBlockValue.get() != "Fake" && autoBlockValue.get() != "Legit"
     }
 
     // Turn Speed
@@ -381,10 +379,6 @@ object KillAura : Module() {
      */
     @EventTarget
     fun onUpdate(event: UpdateEvent) {
-		if (mc.thePlayer.hurtTime != 0) {
-			blockHurtTimeTimer.reset()
-		}
-	
         if (cancelRun) {
             target = null
             currentTarget = null
@@ -405,32 +399,28 @@ object KillAura : Module() {
         if (simulateCooldown.get() && getAttackCooldownProgress() < 1f) {
             return
         }
-	if (noConsumeAttack.get()) {
-		val stack = mc.thePlayer.inventoryContainer.getSlot(mc.thePlayer.inventory.currentItem + 36).stack
-		if (stack != null && (stack.item is ItemFood || stack.item is ItemBucketMilk || stack.item is ItemPotion))
-			return;
-	}
 
-	/*if (noConsumeAttack.get() && mc.thePlayer.isUsingItem && (mc.thePlayer.itemInUse.item is ItemFood || mc.thePlayer.itemInUse.item is ItemBucketMilk || mc.thePlayer.itemInUse.item is ItemPotion)) {
-		return
-	}*/
-		
+        if (noConsumeAttack.get()) {
+            val stack = mc.thePlayer.inventoryContainer.getSlot(mc.thePlayer.inventory.currentItem + 36).stack
+            if (stack != null && (stack.item is ItemFood || stack.item is ItemBucketMilk || stack.item is ItemPotion))
+                return;
+        }
 				
-	if (onlyCriticalsValue.get()) {
-		if (!mc.thePlayer.isOnLadder && !mc.thePlayer.isInWater && !mc.thePlayer.isInWeb && !mc.thePlayer.isInLava && !mc.thePlayer.isPotionActive(Potion.blindness) && mc.thePlayer.ridingEntity == null) { 
-			val criticals = LiquidBounce.moduleManager[Criticals::class.java] as Criticals
-			if (!criticals.state || (criticals.state && !criticals.msTimer.hasTimePassed(criticals.delayValue.get().toLong()))) {
-				if (mc.thePlayer.onGround || mc.thePlayer.fallDistance < falldistanceValue.get()) {
-					return;
+		if (onlyCriticalsValue.get()) {
+			if (!mc.thePlayer.isOnLadder && !mc.thePlayer.isInWater && !mc.thePlayer.isInWeb && !mc.thePlayer.isInLava && !mc.thePlayer.isPotionActive(Potion.blindness) && mc.thePlayer.ridingEntity == null) { 
+				val criticals = LiquidBounce.moduleManager[Criticals::class.java] as Criticals
+				if (!criticals.state || (criticals.state && !criticals.msTimer.hasTimePassed(criticals.delayValue.get().toLong()))) {
+					if (mc.thePlayer.onGround || mc.thePlayer.fallDistance < 0.1f) {
+						return;
+					}
 				}
 			}
 		}
-	}
 
         if (target != null && currentTarget != null) {
             while (clicks > 0) {
                 runAttack()
-		//clicks--
+				//clicks--
                 clicks = 0
             }
         }
@@ -690,24 +680,28 @@ object KillAura : Module() {
             if (EnchantmentHelper.getModifierForCreature(thePlayer.heldItem, target!!.creatureAttribute) > 0f || fakeSharpValue.get())
                 thePlayer.onEnchantmentCritical(target)
         }
-
+	
         //TODO: SHOULD THIS BE THIS? https://github.com/CCBlueX/LiquidBounce/blob/bb112eb53fdee22a974695a1dcaec3c6d9ec10eb/1.8.9-Forge/src/main/java/net/ccbluex/liquidbounce/features/module/modules/combat/KillAura.kt#L547
         /*
-
-            // Start blocking after attack
+        // Start blocking after attack
         if (thePlayer.isBlocking || (autoBlockValue.get() && canBlock)) {
             if (!(blockRate.get() > 0 && Random().nextInt(100) <= blockRate.get()))
                 return
 
             if (delayedBlockValue.get())
                 return
-
-            startBlocking(entity, interactAutoBlockValue.get())
+			startBlocking(entity, interactAutoBlockValue.get())
         }
          */
+		 
         // Start blocking after attack
         if (autoBlockValue.get() == "Packet" && (thePlayer.isBlocking || canBlock))
             startBlocking(entity, interactAutoBlockValue.get())
+		else if (autoBlockValue.get() == "Legit" && canBlock) {
+			mc.rightClickMouse()
+			KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), true)
+			blockStatus = true
+		}
 
         resetLastAttackedTicks()
     }
@@ -793,7 +787,7 @@ object KillAura : Module() {
     /**
      * Start blocking
      */
-    private fun startBlocking(interactEntity: Entity, interact: Boolean, fake: Boolean = false) {
+    private fun startBlocking(interactEntity: Entity, interact: Boolean, fake: Boolean = false) {	
         if (!fake) {
             if (!(blockRate.get() > 0 && nextInt(endExclusive = 100) <= blockRate.get()))
                 return
@@ -835,8 +829,13 @@ object KillAura : Module() {
      */
     private fun stopBlocking() {
         if (blockStatus) {
-            mc.netHandler.addToSendQueue(C07PacketPlayerDigging(C07PacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, EnumFacing.DOWN))
-            blockStatus = false
+			if (autoBlockValue.get().equals("Legit")) {
+				mc.playerController.onStoppedUsingItem(mc.thePlayer as EntityPlayer)
+				KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false)
+			} else {
+				mc.netHandler.addToSendQueue(C07PacketPlayerDigging(C07PacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, EnumFacing.DOWN))
+			}
+			blockStatus = false
         }
 
         renderBlocking = false
@@ -846,8 +845,10 @@ object KillAura : Module() {
      * Check if run should be cancelled
      */
     private val cancelRun: Boolean
-        inline get() = mc.thePlayer.isSpectator || !isAlive(mc.thePlayer)
-                || moduleManager[Blink::class.java].state || moduleManager[FreeCam::class.java].state
+        inline get() = mc.thePlayer.isSpectator || !isAlive(mc.thePlayer) 
+			|| moduleManager[Blink::class.java].state || moduleManager[FreeCam::class.java].state
+			|| (noConsumeAttack.get() && mc.thePlayer.inventoryContainer.getSlot(mc.thePlayer.inventory.currentItem + 36)?.stack?.item is ItemFood)
+
 
     /**
      * Check if [entity] is alive
@@ -859,7 +860,7 @@ object KillAura : Module() {
      * Check if player is able to block
      */
     private val canBlock: Boolean
-        inline get() = mc.thePlayer?.heldItem?.item is ItemSword && mc.thePlayer.hurtTime <= blockHurtTimeValue.get() && (!noBlockWithoutDamageValue.get() || !blockHurtTimeTimer.hasTimePassed(noBlockWithoutDamageTimeValue.get()))
+        inline get() = mc.thePlayer?.heldItem?.item is ItemSword
 
     /**
      * Range

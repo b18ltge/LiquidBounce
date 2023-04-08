@@ -5,6 +5,8 @@
  */
 package net.ccbluex.liquidbounce.utils.item;
 
+import net.ccbluex.liquidbounce.LiquidBounce;
+import net.ccbluex.liquidbounce.features.module.modules.combat.AutoArmor;
 import net.ccbluex.liquidbounce.utils.MinecraftInstance;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ItemArmor;
@@ -45,7 +47,8 @@ public class ArmorComparator extends MinecraftInstance implements Comparator<Arm
 	// This is a way to save some armor during PvP
 	public int customCompare(ArmorPiece o1, ArmorPiece o2) {
 		// let threshold is 9
-		final int threshold = 9;
+		final AutoArmor autoArmor = (AutoArmor) LiquidBounce.moduleManager.getModule(AutoArmor.class);
+		final int threshold = autoArmor.saveArmorThresholdValue.get();
 		
 		Item item1 = o1.getItemStack().getItem();
 		Item item2 = o2.getItemStack().getItem();
@@ -62,10 +65,14 @@ public class ArmorComparator extends MinecraftInstance implements Comparator<Arm
     @Override
     public int compare(ArmorPiece o1, ArmorPiece o2) {
         //*** 26.03.2023 CaT@ ***
-		int customResult = customCompare(o1, o2);
-		if (customResult != 0) {
-			return customResult;
+		final AutoArmor autoArmor = (AutoArmor) LiquidBounce.moduleManager.getModule(AutoArmor.class);
+		if (autoArmor.saveArmorValue.get()) {
+			int customResult = customCompare(o1, o2);
+			if (customResult != 0) {
+				return customResult;
+			}
 		}
+
 		// **********************
         
         // For damage reduction it is better if it is smaller, so it has to be inverted

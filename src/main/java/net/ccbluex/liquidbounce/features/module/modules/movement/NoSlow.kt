@@ -41,9 +41,9 @@ object NoSlow : Module() {
 	
 	private val customDiagonalValue = BoolValue("CustomDiagonal", false)
 	private val customDiagonalMultiplier = object : FloatValue("CustomDiagonalMultiplier", 1f, 0.2F, 1f) {
-		override fun isSupported() = customDiagonalValue.get()
-	}
-	
+        override fun isSupported() = customDiagonalValue.get()
+    }
+
 
     // NCP mode
     private val packet = BoolValue("Packet", true)
