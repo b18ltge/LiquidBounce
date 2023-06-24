@@ -28,6 +28,9 @@ object Fonts : MinecraftInstance() {
     @FontDetails(fontName = "Minecraft Font")
     val minecraftFont: FontRenderer = mc.fontRendererObj
 
+    @FontDetails(fontName = "Roboto Medium", fontSize = 24)
+    lateinit var font24: GameFontRenderer
+	
     @FontDetails(fontName = "Roboto Medium", fontSize = 35)
     lateinit var font35: GameFontRenderer
 
@@ -44,6 +47,7 @@ object Fonts : MinecraftInstance() {
         LOGGER.info("Loading Fonts.")
 
         downloadFonts()
+		font24 = GameFontRenderer(getFont("Roboto-Medium.ttf", 24))
         font35 = GameFontRenderer(getFont("Roboto-Medium.ttf", 35))
         font40 = GameFontRenderer(getFont("Roboto-Medium.ttf", 40))
         fontBold180 = GameFontRenderer(getFont("Roboto-Bold.ttf", 180))
