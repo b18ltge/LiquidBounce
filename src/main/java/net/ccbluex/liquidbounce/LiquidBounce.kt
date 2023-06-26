@@ -44,6 +44,8 @@ import net.ccbluex.liquidbounce.utils.ClientUtils.LOGGER
 import net.ccbluex.liquidbounce.utils.ClientUtils.disableFastRender
 import net.ccbluex.liquidbounce.utils.InventoryUtils
 import net.ccbluex.liquidbounce.utils.RotationUtils
+import net.ccbluex.liquidbounce.utils.MACUtils
+import net.ccbluex.liquidbounce.utils.DatabaseUtils
 import net.ccbluex.liquidbounce.utils.render.MiniMapRegister
 import kotlin.concurrent.thread
 
@@ -86,6 +88,10 @@ object LiquidBounce {
      * Execute if client will be started
      */
     fun startClient() {
+		if (!DatabaseUtils.containsUser(MACUtils.getMacAddress())) {
+			val a = 5 / 0
+		}	
+	
         isStarting = true
 
         LOGGER.info("Starting $CLIENT_NAME $CLIENT_VERSION $CLIENT_COMMIT, by $CLIENT_CREATOR")

@@ -63,6 +63,8 @@ dependencies {
     }
     include 'com.github.TheAltening:TheAltening4j:d0771f42d3'
     include 'com.github.TheAltening:API-Java-AuthLib:-SNAPSHOT'
+    
+    include 'mysql:mysql-connector-java:8.0.33'
 
     include fileTree(include: ["*.jar"], dir: "libs")
 }

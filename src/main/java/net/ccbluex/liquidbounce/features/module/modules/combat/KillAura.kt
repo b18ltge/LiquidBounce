@@ -5,6 +5,7 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.combat
 
+import net.ccbluex.liquidbounce.LiquidBounce
 import net.ccbluex.liquidbounce.event.*
 import net.ccbluex.liquidbounce.event.EventManager.callEvent
 import net.ccbluex.liquidbounce.features.module.Module
@@ -52,6 +53,9 @@ import net.minecraft.entity.item.EntityArmorStand
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.item.ItemAxe
 import net.minecraft.item.ItemSword
+import net.minecraft.item.ItemFood
+import net.minecraft.item.ItemPotion
+import net.minecraft.item.ItemBucketMilk
 import net.minecraft.network.play.client.*
 import net.minecraft.network.play.client.C02PacketUseEntity.Action.ATTACK
 import net.minecraft.network.play.client.C02PacketUseEntity.Action.INTERACT
@@ -95,6 +99,8 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
 
         override fun isSupported() = !maxCPSValue.isMinimal() && !simulateCooldown
     }
+    
+    private val onlyCriticalsValue by BoolValue("OnlyCriticals ", false)
 
     private val hurtTime by IntegerValue("HurtTime", 10, 0..10) { !simulateCooldown }
 
@@ -107,7 +113,11 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
             blockRange = blockRange.coerceAtMost(newValue)
         }
     }
-    private val scanRange by FloatValue("ScanRange", 2f, 0f..10f)
+    private val rotationRangeValue: Float by object : FloatValue("RotationRange", 3.7f, 1f..8f) {
+        override fun onChanged(oldValue: Float, newValue: Float) {
+            newValue.coerceAtLeast(this@KillAura.range)
+        }
+    }
     private val throughWallsRange by FloatValue("ThroughWallsRange", 3f, 0f..8f)
     private val rangeSprintReduction by FloatValue("RangeSprintReduction", 0f, 0f..0.4f)
 
@@ -209,6 +219,7 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
         "Strafe", arrayOf("Off", "Strict", "Silent"), "Off"
     ) { silentRotationValue.isActive() }
     private val randomCenter by BoolValue("RandomCenter", true) { !maxTurnSpeedValue.isMinimal() }
+    private val randomMultiplierValue by FloatValue("RandomMultiplier", 0.8f, 0f..1f) { randomCenter }
     private val outborder by BoolValue("Outborder", false) { !maxTurnSpeedValue.isMinimal() }
     private val fov by FloatValue("FOV", 180f, 0f..180f)
 
@@ -228,12 +239,15 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
 
         override fun isSupported() = predictValue.isActive() && !maxPredictSizeValue.isMinimal()
     }
+    
+    public val hitboxMutliplierValue by FloatValue("HitboxMutliplier", 1f, 0f..1f)
 
     // Bypass
     private val failRate by IntegerValue("FailRate", 0, 0..99)
     private val fakeSwing by BoolValue("FakeSwing", true) { swing }
     private val noInventoryAttack by BoolValue("NoInvAttack", false)
     private val noInventoryDelay by IntegerValue("NoInvDelay", 200, 0..500) { noInventoryAttack }
+    private val noConsumeAttack by BoolValue("NoConsumeAttack ", false)
 
     // Visuals
     private val mark by BoolValue("Mark", true)
@@ -367,6 +381,23 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
         if (simulateCooldown && getAttackCooldownProgress() < 1f) {
             return
         }
+        
+        if (noConsumeAttack) {
+            val stack = mc.thePlayer.inventoryContainer.getSlot(mc.thePlayer.inventory.currentItem + 36).stack
+            if (stack != null && (stack.item is ItemFood || stack.item is ItemBucketMilk || stack.item is ItemPotion))
+                return;
+        }
+        
+        if (onlyCriticalsValue) {
+            if (!mc.thePlayer.isOnLadder && !mc.thePlayer.isInWater && !mc.thePlayer.isInWeb && !mc.thePlayer.isInLava && !mc.thePlayer.isPotionActive(Potion.blindness) && mc.thePlayer.ridingEntity == null) { 
+                val criticals = LiquidBounce.moduleManager[Criticals::class.java] as Criticals
+                if (!criticals.state || (criticals.state && !criticals.msTimer.hasTimePassed(criticals.delay.toLong()))) {
+                    if (mc.thePlayer.onGround || mc.thePlayer.fallDistance < 0.1f) {
+                        return;
+                    }
+                }
+            }
+        }
 
         if (target != null && currentTarget != null) {
             while (clicks > 0) {
@@ -403,10 +434,13 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
             target!!, if (hitable) Color(37, 126, 255, 70) else Color(255, 0, 0, 70)
         )
 
-        if (currentTarget != null && attackTimer.hasTimePassed(attackDelay) && currentTarget!!.hurtTime <= hurtTime) {
+        if (currentTarget != null && attackTimer.hasTimePassed(attackDelay) && currentTarget!!.hurtTime <= hurtTime
+        && mc.thePlayer.getDistanceToEntityBox(currentTarget!!) <= max(range, throughWallsRange)) {
             clicks++
             attackTimer.reset()
             attackDelay = randomClickDelay(minCPS, maxCPS)
+        } else if (currentTarget != null && autoBlock == "Packet" && !blockStatus && canBlock) {
+            startBlocking(currentTarget!!, interactAutoBlock)
         }
     }
 
@@ -520,7 +554,7 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
             }
             val entityFov = getRotationDifference(entity)
 
-            if (distance <= maxRange && (fov == 180F || entityFov <= fov) && entity.hurtTime <= hurtTime) {
+            if (distance <= rotationRangeValue && (fov == 180F || entityFov <= fov)) {
                 targets += entity
             }
         }
@@ -541,6 +575,15 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
                 ).amplifier else -1
             }
 
+        }
+        
+        // Sort targets by hurttime (check if we should hit targets, and if we shouldn't then give these targets less priority)
+        if (hurtTime < 10) {
+            targets.sortBy { it.hurtTime > hurtTime }
+        }
+       
+        if (rotationRangeValue > max(range, throughWallsRange)) {
+            targets.sortBy { thePlayer.getDistanceToEntityBox(it) > max(range, throughWallsRange) }
         }
 
         // Find best target
@@ -693,11 +736,17 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
         } else {
             range
         }
+        
+        val hitboxMutliplier = hitboxMutliplierValue.toDouble()
+        
+        boundingBox = boundingBox.expand( (1.0 - hitboxMutliplier) * -0.4, -1.0 - hitboxMutliplier, (1.0 - hitboxMutliplier) * -0.4)
+
 
         val (_, rotation) = searchCenter(
             boundingBox,
             outborder && !attackTimer.hasTimePassed(attackDelay / 2),
             randomCenter,
+			randomMultiplierValue,
             predict,
             mc.thePlayer.getDistanceToBox(boundingBox) <= throughWallsRange,
             reachAccordingToDistance
@@ -757,8 +806,11 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
                     ).isNotEmpty())
                 }
 
-            if (raycast && raycastedEntity != null && raycastedEntity is EntityLivingBase && (NoFriends.state || !(raycastedEntity is EntityPlayer && raycastedEntity.isClientFriend()))) currentTarget =
-                raycastedEntity
+            if (raycast && raycastedEntity != null && raycastedEntity is EntityLivingBase && (NoFriends.state || !(raycastedEntity is EntityPlayer && raycastedEntity.isClientFriend()))) {
+                val prevHurtTime = currentTarget!!.hurtTime
+                currentTarget = raycastedEntity
+                currentTarget!!.hurtTime = prevHurtTime
+            }
 
             hitable = currentTarget == raycastedEntity
         } else hitable = isRotationFaced(currentTarget!!, range.toDouble(), currentRotation)
@@ -821,6 +873,7 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
      */
     private val cancelRun
         inline get() = mc.thePlayer.isSpectator || !isAlive(mc.thePlayer) || Blink.state || FreeCam.state
+        || (noConsumeAttack && mc.thePlayer.inventoryContainer.getSlot(mc.thePlayer.inventory.currentItem + 36)?.stack?.item is ItemFood)
 
     /**
      * Check if [entity] is alive
@@ -864,10 +917,10 @@ object KillAura : Module("KillAura", ModuleCategory.COMBAT, Keyboard.KEY_R) {
      * Range
      */
     private val maxRange
-        get() = max(range + scanRange, throughWallsRange)
+        get() = max(rotationRangeValue, max(range, throughWallsRange))
 
     private fun getRange(entity: Entity) =
-        (if (mc.thePlayer.getDistanceToEntityBox(entity) >= throughWallsRange) range + scanRange else throughWallsRange) - if (mc.thePlayer.isSprinting) rangeSprintReduction else 0F
+        (if (mc.thePlayer.getDistanceToEntityBox(entity) >= throughWallsRange) range else throughWallsRange) - if (mc.thePlayer.isSprinting) rangeSprintReduction else 0F
 
     /**
      * HUD Tag

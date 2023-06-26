@@ -63,7 +63,7 @@ object Aimbot : Module("Aimbot", ModuleCategory.COMBAT) {
         val playerRotation = mc.thePlayer.rotation
         val destinationRotation =
             if (center) toRotation(getCenter(boundingBox), true)
-            else searchCenter(boundingBox, false, false, true, false, range)?.rotation ?: return
+            else searchCenter(boundingBox, false, false, 1F, true, false, range)?.rotation ?: return
 
         // Figure out the best turn speed suitable for the distance and configured turn speed
 

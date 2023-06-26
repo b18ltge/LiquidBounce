@@ -35,6 +35,10 @@ object NoSlow : Module("NoSlow", ModuleCategory.MOVEMENT) {
 
     private val bowForwardMultiplier by FloatValue("BowForwardMultiplier", 1f, 0.2F..1f)
     private val bowStrafeMultiplier by FloatValue("BowStrafeMultiplier", 1f, 0.2F..1f)
+    
+    private val customDiagonalValue by BoolValue("CustomDiagonal", false)
+    private val forwardDiagonalMultiplier by FloatValue("ForwardDiagonalMultiplier", 1f, 0.2F..1f) { customDiagonalValue }
+    private val backwardDiagonalMultiplier by FloatValue("BackwardDiagonalMultiplier", 1f, 0.2F..1f) { customDiagonalValue }
 
     // NCP mode
     private val packet by BoolValue("Packet", true)
@@ -72,8 +76,8 @@ object NoSlow : Module("NoSlow", ModuleCategory.MOVEMENT) {
         event.strafe = getMultiplier(heldItem, false)
     }
 
-    private fun getMultiplier(item: Item?, isForward: Boolean) =
-        when (item) {
+    private fun getMultiplier(item: Item?, isForward: Boolean): Float {
+        var result = when (item) {
             is ItemFood, is ItemPotion, is ItemBucketMilk ->
                 if (isForward) consumeForwardMultiplier else consumeStrafeMultiplier
 
@@ -85,4 +89,22 @@ object NoSlow : Module("NoSlow", ModuleCategory.MOVEMENT) {
 
             else -> 0.2F
         }
+        if (customDiagonalValue) {
+            if (isMovingForwardDiagonally())
+                result = forwardDiagonalMultiplier
+            else if (isMovingBackwardDiagonally()) {
+                result = backwardDiagonalMultiplier
+            }
+        }
+        return result
+    }
+
+    private fun isMovingForwardDiagonally() : Boolean {
+        return mc.thePlayer.movementInput.moveForward > 0f && mc.thePlayer.movementInput.moveStrafe != 0f
+    }
+    
+    private fun isMovingBackwardDiagonally() : Boolean {
+        return mc.thePlayer.movementInput.moveForward < 0f && mc.thePlayer.movementInput.moveStrafe != 0f
+    }
+
 }

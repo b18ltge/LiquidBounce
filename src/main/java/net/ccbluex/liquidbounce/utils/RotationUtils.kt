@@ -227,7 +227,7 @@ object RotationUtils : MinecraftInstance(), Listenable {
      * @return center
      */
     fun searchCenter(
-        bb: AxisAlignedBB, outborder: Boolean, random: Boolean, predict: Boolean, throughWalls: Boolean, distance: Float
+        bb: AxisAlignedBB, outborder: Boolean, random: Boolean, randomMultiplier : Float, predict: Boolean, throughWalls: Boolean, distance: Float
     ): VecRotation? {
         if (outborder) {
             val vec3 = Vec3(
@@ -237,9 +237,13 @@ object RotationUtils : MinecraftInstance(), Listenable {
             )
             return VecRotation(vec3, toRotation(vec3, predict))
         }
+        
+        val extraX = 0.5 + (x - 0.5) * randomMultiplier;
+        val extraY = 0.5 + (y - 0.5) * randomMultiplier;
+        val extraZ = 0.5 + (z - 0.5) * randomMultiplier;
 
         val randomVec = Vec3(
-            bb.minX + (bb.maxX - bb.minX) * x, bb.minY + (bb.maxY - bb.minY) * y, bb.minZ + (bb.maxZ - bb.minZ) * z
+            bb.minX + (bb.maxX - bb.minX) * extraX, bb.minY + (bb.maxY - bb.minY) * extraY, bb.minZ + (bb.maxZ - bb.minZ) * extraZ
         )
 
         val randomRotation = toRotation(randomVec, predict)

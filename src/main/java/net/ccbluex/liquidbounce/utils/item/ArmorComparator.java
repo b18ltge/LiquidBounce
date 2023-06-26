@@ -5,10 +5,13 @@
  */
 package net.ccbluex.liquidbounce.utils.item;
 
+import net.ccbluex.liquidbounce.LiquidBounce;
+import net.ccbluex.liquidbounce.features.module.modules.combat.AutoArmor;
 import net.ccbluex.liquidbounce.utils.MinecraftInstance;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Item;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -40,9 +43,43 @@ public class ArmorComparator extends MinecraftInstance implements Comparator<Arm
         bd = bd.setScale(places, RoundingMode.HALF_UP);
         return bd.doubleValue();
     }
+	
+	//*** 26.03.2023 CaT@ ***
+	// This is a way to save some armor during PvP
+	public int customCompare(ArmorPiece o1, ArmorPiece o2) {
+		final AutoArmor autoArmor = (AutoArmor) LiquidBounce.INSTANCE.getModuleManager().getModule(AutoArmor.class);
+		final int threshold = autoArmor.saveArmorThresholdValue.get();
+		final int protectionValue = autoArmor.saveArmorProtectionValue.get();
+
+		final Item item1 = o1.getItemStack().getItem();
+		final Item item2 = o2.getItemStack().getItem();
+		final int durability1 = item1.getMaxDamage(o1.getItemStack()) - item1.getDamage(o1.getItemStack());
+		final int durability2 = item2.getMaxDamage(o2.getItemStack()) - item2.getDamage(o2.getItemStack());
+		
+		final int protection1 = getEnchantmentLevel(o1.getItemStack(), Enchantment.protection);
+		final int protection2 = getEnchantmentLevel(o2.getItemStack(), Enchantment.protection);
+		
+		if (durability1 < threshold && durability2 >= threshold && protection1 >= protectionValue) {
+			return -1;
+		} else if (durability1 >= threshold && durability2 < threshold && protection2 >= protectionValue) {
+			return 1;
+		}
+		return 0;
+	}
 
     @Override
     public int compare(ArmorPiece o1, ArmorPiece o2) {
+		//*** 26.03.2023 CaT@ ***
+		final AutoArmor autoArmor = (AutoArmor) LiquidBounce.INSTANCE.getModuleManager().getModule(AutoArmor.class);
+		if (autoArmor.saveArmorValue.get()) {
+			int customResult = customCompare(o1, o2);
+			if (customResult != 0) {
+				return customResult;
+			}
+		}
+		// **********************
+		
+		
         // For damage reduction it is better if it is smaller, so it has to be inverted
         // The decimal values have to be rounded since in double math equals is inaccurate
         // For example 1.03 - 0.41 = 0.6200000000000001 and (1.03 - 0.41) == 0.62 would be false

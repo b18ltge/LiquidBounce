@@ -47,7 +47,10 @@ object ModuleManager : Listenable {
             ItemTeleport::class.java,
             Phase::class.java,
             Teleport::class.java,
-            TeleportHit::class.java
+            TeleportHit::class.java,
+			AutoGameMath::class.java,
+			AutoMessageColor::class.java,
+			KeyPearl::class.java
         )
 
         // Register modules which have already been instanced (Kotlin objects)
@@ -116,6 +119,7 @@ object ModuleManager : Listenable {
             Freeze,
             Fucker,
             Fullbright,
+			Gapple,
             Ghost,
             GhostHand,
             GodMode,

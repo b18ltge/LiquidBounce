@@ -35,7 +35,8 @@ object HUD : MinecraftInstance() {
           Target::class.java,
           Radar::class.java,
           SpeedGraph::class.java,
-          Cooldown::class.java)
+          Cooldown::class.java,
+		  Inventory::class.java)
 
   /** Create default HUD */
   fun setDefault() {

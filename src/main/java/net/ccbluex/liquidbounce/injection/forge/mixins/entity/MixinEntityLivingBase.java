@@ -10,9 +10,11 @@ import net.ccbluex.liquidbounce.event.JumpEvent;
 import net.ccbluex.liquidbounce.features.module.modules.movement.AirJump;
 import net.ccbluex.liquidbounce.features.module.modules.movement.LiquidWalk;
 import net.ccbluex.liquidbounce.features.module.modules.movement.NoJumpDelay;
+import net.ccbluex.liquidbounce.features.module.modules.movement.Sprint;
 import net.ccbluex.liquidbounce.features.module.modules.render.AntiBlind;
 import net.ccbluex.liquidbounce.utils.Rotation;
 import net.ccbluex.liquidbounce.utils.RotationUtils;
+import net.ccbluex.liquidbounce.utils.MovementUtils;
 import net.minecraft.block.Block;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.EntityLivingBase;
@@ -80,7 +82,16 @@ public abstract class MixinEntityLivingBase extends MixinEntity {
 
         if(isSprinting()) {
             final Rotation targetRotation = RotationUtils.INSTANCE.getTargetRotation();
-            float f = (targetRotation != null ? targetRotation.getYaw() : this.rotationYaw) * 0.017453292F;
+            float fixedYaw = this.rotationYaw;
+            if (targetRotation != null) {
+                fixedYaw = RotationUtils.INSTANCE.getTargetRotation().getYaw();
+            }
+            
+            if (Sprint.INSTANCE.getState() && Sprint.INSTANCE.getJumpDirectionValue()) {
+                fixedYaw += MovementUtils.INSTANCE.getMovingYaw() - this.rotationYaw;
+            }
+            
+            float f = fixedYaw * 0.017453292F;
             motionX -= MathHelper.sin(f) * 0.2F;
             motionZ += MathHelper.cos(f) * 0.2F;
         }

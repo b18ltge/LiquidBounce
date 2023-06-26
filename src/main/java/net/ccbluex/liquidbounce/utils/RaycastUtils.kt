@@ -12,6 +12,7 @@ import net.ccbluex.liquidbounce.utils.extensions.eyes
 import net.ccbluex.liquidbounce.utils.extensions.hitBox
 import net.minecraft.entity.Entity
 import net.minecraft.entity.player.EntityPlayer
+import net.ccbluex.liquidbounce.features.module.modules.combat.KillAura
 
 
 object RaycastUtils : MinecraftInstance() {
@@ -50,7 +51,8 @@ object RaycastUtils : MinecraftInstance() {
                 if (!entityFilter(entity)) continue
 
                 val checkEntity = {
-                    val axisAlignedBB = entity.hitBox
+                    val hitboxMutliplier = KillAura.hitboxMutliplierValue.toDouble()
+                    val axisAlignedBB = entity.hitBox.expand((1.0 - hitboxMutliplier) * -0.4, -1.0 - hitboxMutliplier, (1.0 - hitboxMutliplier) * -0.4)
 
                     val movingObjectPosition = axisAlignedBB.calculateIntercept(eyePosition, vec)
 
